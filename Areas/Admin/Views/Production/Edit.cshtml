@@ -1,0 +1,283 @@
+﻿@model WMS.Models.ProductionOrderModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Chỉnh sửa lệnh sản xuất";
+}
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+        <i class="fa-solid fa-industry me-2"></i>
+        <h5 class="mb-0">Chỉnh sửa lệnh sản xuất: @Model.OrderNumber</h5>
+    </div>
+
+    <div class="card-body">
+        <form asp-action="Edit" method="post" class="needs-validation" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="OrderNumber" />
+            <input type="hidden" asp-for="ProductId" />
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@ViewBag.ErrorMessage
+                </div>
+            }
+
+            <!-- 🔹 MÃ LỆNH SẢN XUẤT -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    <i class="fa-solid fa-barcode me-1 text-primary"></i> Mã lệnh sản xuất
+                </label>
+                <input value="@Model.OrderNumber" class="form-control shadow-sm bg-light" readonly />
+            </div>
+
+            <!-- 🔹 THÔNG TIN THÀNH PHẨM -->
+            <div class="border rounded p-3 mb-4 bg-light-subtle">
+                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-box me-2"></i> Thông tin thành phẩm</h6>
+
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label">Sản phẩm</label>
+                        <input value="@Model.Product?.ProductName" class="form-control shadow-sm" readonly />
+                        <div id="productStockInfo" class="mt-1 small text-muted"></div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Đơn vị</label>
+                        <input value="@Model.Product?.ProductUnit" id="productUnit" class="form-control shadow-sm" readonly />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Số lượng</label>
+                        <input asp-for="Quantity" id="productQty" class="form-control shadow-sm" />
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Đơn giá (VNĐ)</label>
+                        <input asp-for="UnitPrice" id="productPrice" type="number" step="0.01" class="form-control shadow-sm" />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-calendar-day text-primary me-1"></i> Ngày bắt đầu</label>
+                        <input asp-for="StartDate" type="date" class="form-control shadow-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-calendar-check text-success me-1"></i> Ngày kết thúc dự kiến</label>
+                        <input asp-for="PlannedEndDate" type="date" class="form-control shadow-sm" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-clock text-danger me-1"></i> Ngày hoàn thành thực tế</label>
+                        <input value="@(Model.EndDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")" class="form-control shadow-sm bg-light" readonly />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🔹 DANH SÁCH NGUYÊN LIỆU -->
+            <div class="border rounded p-3 bg-light-subtle mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-secondary mb-0"><i class="fa-solid fa-flask me-2"></i> Nguyên liệu sử dụng</h6>
+                    <button type="button" id="add-material" class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-plus"></i> Thêm nguyên liệu
+                    </button>
+                </div>
+
+                <table class="table table-bordered align-middle shadow-sm" id="materialsTable">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Nguyên liệu</th>
+                            <th>Đơn vị</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá (VNĐ)</th>
+                            <th>Thành tiền (VNĐ)</th>
+                            <th>Tồn kho</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Materials != null && Model.Materials.Any())
+                        {
+                            var i = 0;
+                            foreach (var m in Model.Materials)
+                            {
+                                <tr>
+                                    <input type="hidden" name="Materials[@i].Id" value="@m.Id" />
+                                    <input type="hidden" name="Materials[@i].ProductionOrderId" value="@m.ProductionOrderId" />
+
+                                    <td>
+                                        <select name="Materials[@i].MaterialId" class="form-select material-select" data-index="@i">
+                                            <option value="">-- Chọn nguyên liệu --</option>
+                                            @foreach (var mat in ViewBag.Materials)
+                                            {
+                                                <option value="@mat.Id"
+                                                        data-unit="@mat.ProductUnit"
+                                                        data-price="@mat.ProductPrice"
+                                                        selected="@(m.MaterialId == mat.Id ? "selected" : null)">
+                                                    @mat.ProductName
+                                                </option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td><input name="Materials[@i].Unit" value="@(m.Unit ?? m.Product?.ProductUnit)" class="form-control unit" readonly /></td>
+                                    <td><input name="Materials[@i].PlannedQuantity" value="@m.PlannedQuantity" type="number" step="0.01" class="form-control qty" /></td>
+                                    <td><input name="Materials[@i].UnitPrice" value="@m.UnitPrice" type="number" step="0.01" class="form-control price" /></td>
+                                    <td class="text-end fw-semibold text-danger total">@String.Format("{0:N0}", m.PlannedQuantity * m.UnitPrice)</td>
+                                    <td class="stock-info text-center text-muted"><small class="stock-display">Đang tải...</small></td>
+                                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove"><i class="fa fa-trash"></i></button></td>
+                                </tr>
+                                i++;
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="7" class="text-center text-muted">Chưa có nguyên liệu nào</td></tr>
+                        }
+                    </tbody>
+                    <tfoot class="fw-bold text-end">
+                        <tr class="table-light">
+                            <td colspan="5">Tổng chi phí nguyên liệu:</td>
+                            <td id="totalMaterial" class="text-danger">0</td>
+                            <td></td>
+                        </tr>
+                        <tr class="table-info">
+                            <td colspan="5">Tổng giá trị thành phẩm:</td>
+                            <td id="totalProduct" class="text-success">0</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- 🔹 GHI CHÚ -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold"><i class="fa-solid fa-pen-to-square me-1 text-primary"></i> Ghi chú</label>
+                <textarea asp-for="Notes" class="form-control shadow-sm" rows="3"></textarea>
+            </div>
+
+            <!-- 🔹 TRẠNG THÁI -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold"><i class="fa-solid fa-signal text-primary me-1"></i> Trạng thái</label>
+                <select asp-for="Status" class="form-select shadow-sm">
+                    <option value="0">Khởi tạo</option>
+                    <option value="1">Đang sản xuất</option>
+                    <option value="2">Hoàn thành</option>
+                </select>
+            </div>
+
+            <!-- 🔹 NÚT LƯU -->
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-success shadow-sm px-4">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Cập nhật lệnh sản xuất
+                </button>
+                <a asp-action="Index" class="btn btn-secondary shadow-sm ms-2 px-3">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const PRODUCT_ID = '@Model.ProductId';
+        const ORDER_ID = '@Model.Id';
+        const initialMaterialCount = @(Model.Materials?.Count() ?? 0);
+        let currentIndex = initialMaterialCount;
+
+        function loadMaterialStock(row, materialId) {
+            const stockDisplay = row.find('.stock-display');
+            stockDisplay.html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+            fetch(`/Admin/Production/GetInventoryStock?id=${materialId}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        const stock = parseFloat(res.stock) || 0;
+                        const unit = res.unit || '';
+                        row.data('stock', stock);
+                        stockDisplay.html(`🏭 <small class="text-muted">Tồn: ${stock.toLocaleString('vi-VN')} ${unit}</small>`);
+                        const qty = parseFloat(row.find('.qty').val()) || 0;
+                        if (qty > stock) {
+                            const shortage = qty - stock;
+                            row.find('.stock-info').html(`
+                                ⚠️ <small class="text-danger">
+                                    Thiếu ${shortage.toLocaleString('vi-VN')} ${unit}!<br>
+                                    <a href="/Admin/Purchase/Create" class="text-primary text-decoration-underline">
+                                        ➕ Tạo phiếu mua hàng
+                                    </a>
+                                </small>
+                            `);
+                        }
+                    } else {
+                        stockDisplay.html(`<small class="text-danger">Không có dữ liệu tồn!</small>`);
+                    }
+                })
+                .catch(() => stockDisplay.html(`<small class="text-danger">Lỗi tải tồn kho!</small>`));
+        }
+
+        function updateTotals() {
+            let totalMaterial = 0;
+            $('#materialsTable tbody tr').each(function () {
+                const row = $(this);
+                const qty = parseFloat(row.find('.qty').val()) || 0;
+                const price = parseFloat(row.find('.price').val()) || 0;
+                totalMaterial += qty * price;
+                row.find('.total').text((qty * price).toLocaleString('vi-VN'));
+            });
+            const totalProduct = (parseFloat($('#productQty').val()) || 0) * (parseFloat($('#productPrice').val()) || 0);
+            $('#totalMaterial').text(totalMaterial.toLocaleString('vi-VN'));
+            $('#totalProduct').text(totalProduct.toLocaleString('vi-VN'));
+        }
+
+        $(document).on('change', '.material-select', function () {
+            const row = $(this).closest('tr');
+            const selected = $(this).find(':selected');
+            row.find('.unit').val(selected.data('unit'));
+            row.find('.price').val(selected.data('price'));
+            loadMaterialStock(row, $(this).val());
+            updateTotals();
+        });
+
+        $(document).on('input', '.qty, .price, #productQty, #productPrice', updateTotals);
+
+        $('#add-material').click(() => {
+            let options = "";
+            @foreach (var m in ViewBag.Materials)
+            {
+                    <text>options += `<option value="@m.Id" data-unit="@m.ProductUnit" data-price="@m.ProductPrice">@m.ProductName</option>`;</text>
+            }
+            $('#materialsTable tbody').append(`
+                <tr>
+                    <input type="hidden" name="Materials[${currentIndex}].Id" value="0" />
+                    <input type="hidden" name="Materials[${currentIndex}].ProductionOrderId" value="${ORDER_ID}" />
+                    <td><select name="Materials[${currentIndex}].MaterialId" class="form-select material-select"><option value="">-- Chọn nguyên liệu --</option>${options}</select></td>
+                    <td><input name="Materials[${currentIndex}].Unit" class="form-control unit" readonly /></td>
+                    <td><input name="Materials[${currentIndex}].PlannedQuantity" type="number" step="0.01" class="form-control qty" /></td>
+                    <td><input name="Materials[${currentIndex}].UnitPrice" type="number" step="0.01" class="form-control price" /></td>
+                    <td class="text-end fw-semibold text-danger total">0</td>
+                    <td class="stock-info text-center text-muted"><small class="stock-display">-</small></td>
+                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove"><i class="fa fa-trash"></i></button></td>
+                </tr>`);
+            currentIndex++;
+        });
+
+        $(document).on('click', '.remove', function () {
+            $(this).closest('tr').remove();
+            updateTotals();
+        });
+
+        $(document).ready(() => {
+            $('#materialsTable tbody tr').each(function () {
+                const id = $(this).find('.material-select').val();
+                if (id) loadMaterialStock($(this), id);
+            });
+            updateTotals();
+        });
+    </script>
+}

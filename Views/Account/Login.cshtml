@@ -1,0 +1,66 @@
+﻿@model LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập tài khoản";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+    <div class="card shadow-lg border-0" style="max-width: 420px; width: 100%;">
+        <div class="card-body p-4">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-cubes fa-3x text-primary mb-2"></i>
+                <h3 class="fw-bold text-primary">Đăng nhập hệ thống</h3>
+                <p class="text-muted small">Quản lý kho hàng thông minh cùng WMS</p>
+            </div>
+
+            <form method="post" asp-controller="Account" asp-action="Login" novalidate>
+                @Html.AntiForgeryToken()
+
+                <!-- Email -->
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label fw-semibold">
+                        <i class="fa-solid fa-envelope me-1"></i> Email
+                    </label>
+                    <input asp-for="Email" type="email" class="form-control form-control-lg" placeholder="Nhập email của bạn" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-semibold">
+                        <i class="fa-solid fa-lock me-1"></i> Mật khẩu
+                    </label>
+                    <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="Nhập mật khẩu" />
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="form-check mb-3">
+                    <input asp-for="Rememberme" class="form-check-input" id="rememberMeCheck" />
+                    <label class="form-check-label" for="rememberMeCheck">
+                        Ghi nhớ đăng nhập
+                    </label>
+                </div>
+
+                <!-- Button -->
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                    <i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập
+                </button>
+
+                <!-- Links -->
+                <div class="text-center mt-3">
+                   
+                    <p class="small">
+                        Chưa có tài khoản?
+                        <a asp-controller="Account" asp-action="Register" class="fw-semibold text-primary text-decoration-none">
+                            Đăng ký ngay
+                        </a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

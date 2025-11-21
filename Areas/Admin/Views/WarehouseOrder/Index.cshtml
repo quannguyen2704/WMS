@@ -1,0 +1,265 @@
+﻿@model X.PagedList.IPagedList<WMS.Models.OrderModel>
+@using X.PagedList.Mvc.Core
+
+@{
+    ViewData["Title"] = "Quản lý đơn hàng kho";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fa-solid fa-warehouse me-2"></i> Quản lý đơn hàng kho
+        </h2>
+
+        <!-- NÚT XUẤT EXCEL -->
+        <a asp-action="ExportToExcel"
+           asp-route-keyword="@ViewBag.Keyword"
+           asp-route-fromDate="@ViewBag.FromDate"
+           asp-route-toDate="@ViewBag.ToDate"
+           asp-route-statusFilter="@ViewBag.StatusFilter"
+           class="btn btn-success shadow-sm">
+            <i class="fa-solid fa-file-excel me-1"></i> Xuất Excel
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- 🔍 Bộ lọc -->
+    <form method="get" class="row g-3 align-items-end mb-4 shadow-sm p-3 border rounded bg-light">
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
+            </label>
+            <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control"
+                   placeholder="Nhập mã đơn, khách hàng hoặc sản phẩm..." />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-calendar-day"></i> Từ ngày
+            </label>
+            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-calendar-check"></i> Đến ngày
+            </label>
+            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-filter"></i> Trạng thái
+            </label>
+            <select name="statusFilter" class="form-select">
+                <option value="">-- Tất cả --</option>
+                @foreach (var s in ViewBag.StatusList)
+                {
+                    <option value="@s.Value" selected="@((int?)ViewBag.StatusFilter == (int)s.Value ? "selected" : null)">
+                        @s.Text
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-50">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary w-50">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+            </a>
+        </div>
+    </form>
+
+    <!-- 📋 Bảng dữ liệu -->
+    <table class="table table-bordered table-hover align-middle shadow-sm">
+        <thead class="table-primary text-center">
+            <tr>
+                <th><i class="fa-solid fa-barcode"></i> Mã đơn</th>
+                <th><i class="fa-solid fa-box"></i> Sản phẩm</th>
+                <th><i class="fa-solid fa-cubes"></i> SL</th>
+                <th><i class="fa-solid fa-money-bill"></i> Đơn giá (VNĐ)</th>
+                <th><i class="fa-solid fa-coins"></i> Thành tiền (VNĐ)</th>
+                <th><i class="fa-solid fa-user"></i> Khách hàng</th>
+                <th><i class="fa-solid fa-credit-card"></i> Phương thức thanh toán</th> <!-- ✅ thêm -->
+                <th><i class="fa-solid fa-calendar"></i> Ngày đặt</th>
+                <th><i class="fa-solid fa-calendar-check"></i> Ngày giao</th>
+                <th><i class="fa-solid fa-warehouse"></i> Trạng thái kho</th>
+                <th><i class="fa-solid fa-gear"></i> Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var o in Model)
+                {
+                    <tr>
+                        <td class="fw-semibold">@o.OrderNumber</td>
+                        <td>@o.Product?.ProductName</td>
+                        <td>@o.Quantity @o.Unit</td>
+                        <td>@o.UnitPrice.ToString("N0")</td>
+                        <td class="fw-bold text-success">@((o.Quantity * o.UnitPrice).ToString("N0"))</td>
+                        <td>@o.Customer?.Name</td>
+
+                        <!-- ✅ Phương thức thanh toán -->
+                        <td class="text-center">
+                            @switch (o.PaymentMethod)
+                            {
+                                case WMS.Models.PaymentMethod.COD:
+                                    <span class="badge bg-secondary">
+                                        <i class="fa-solid fa-hand-holding-dollar me-1"></i> COD
+                                    </span>
+                                    ;
+                                    break;
+                                case WMS.Models.PaymentMethod.MOMO:
+                                    <span class="badge bg-pink text-white">
+                                        <i class="fa-solid fa-mobile-screen-button me-1"></i> CK
+                                    </span>
+                                    ;
+                                    break;
+                            }
+                        </td>
+
+                        <td>@o.OrderDate.ToString("dd/MM/yyyy")</td>
+                        <td>@(o.DeliveryDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+
+                        <td class="text-center">
+                            @switch (o.WarehouseStatus)
+                            {
+                                case WMS.Models.WarehouseOrderStatus.PENDING:
+                                    <span class="badge bg-secondary"><i class="fa-solid fa-hourglass-half me-1"></i> Đơn mới</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.PROCESSING:
+                                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Xử lý</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.WAIT_CONFIRM:
+                                    <span class="badge bg-info text-dark"><i class="fa-solid fa-circle-info me-1"></i> Chờ xác nhận</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.PACKING:
+                                    <span class="badge bg-primary"><i class="fa-solid fa-boxes-packing me-1"></i> Đóng gói</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.DELIVERING:
+                                    <span class="badge bg-info text-dark"><i class="fa-solid fa-truck-fast me-1"></i> Đang giao</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.DELIVERED:
+                                    <span class="badge bg-success"><i class="fa-solid fa-truck me-1"></i> Xuất kho</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.COMPLETED:
+                                    <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Hoàn tất</span>
+                                    ;
+                                    break;
+                                case WMS.Models.WarehouseOrderStatus.FAILED:
+                                    <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Giao thất bại</span>
+                                    ;
+                                    break;
+                            }
+                        </td>
+
+                        <td class="text-center">
+                            <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-warning me-1">
+                                <i class="fa fa-pen"></i> Cập nhật
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@o.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Bạn có chắc muốn xóa đơn hàng này không?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fa-solid fa-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+
+                <!-- 🧾 Tổng doanh thu -->
+                <tr class="table-light fw-bold">
+                    <td colspan="5" class="text-end text-primary">Tổng doanh thu trang này:</td>
+                    <td class="text-success">@Model.Sum(o => o.Quantity * o.UnitPrice).ToString("N0")</td>
+                    <td colspan="5"></td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td colspan="11" class="text-center text-muted">
+                        <i class="fa-solid fa-circle-info me-1"></i> Chưa có đơn hàng nào trong kho.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- 📄 Phân trang -->
+    <div class="d-flex justify-content-center mt-4">
+        @Html.PagedListPager(Model, page => Url.Action("Index", new {
+        page,
+        keyword = ViewBag.Keyword,
+        fromDate = ViewBag.FromDate,
+        toDate = ViewBag.ToDate,
+        statusFilter = ViewBag.StatusFilter
+                }),
+                new PagedListRenderOptions
+                {
+                    LiElementClasses = new[] { "page-item" },
+                    PageClasses = new[] { "page-link" },
+                    UlElementClasses = new[] { "pagination pagination-sm" },
+                    ActiveLiElementClass = "active"
+                })
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .table-hover tbody tr:hover {
+            background-color: #eef7ff !important;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-warning {
+            color: #fff;
+            background-color: #f0ad4e;
+            border: none;
+        }
+
+            .btn-warning:hover {
+                background-color: #ec971f;
+            }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+        }
+
+            .btn-danger:hover {
+                background-color: #c82333;
+            }
+
+        .alert {
+            border-radius: 8px;
+        }
+
+        .badge {
+            font-size: 0.85rem;
+            padding: 6px 10px;
+        }
+
+        /* Màu hồng Momo */
+        .bg-pink {
+            background-color: #d82b7e !important;
+        }
+    </style>
+}

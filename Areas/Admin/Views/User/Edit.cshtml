@@ -1,0 +1,119 @@
+﻿@model WMS.Models.ViewModel.UserEditViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Cập nhật Người dùng";
+}
+
+<style>
+    .input-group-text {
+        width: 42px;
+        justify-content: center;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1">
+            <i class="fa-solid fa-user-pen me-2"></i>Cập Nhật Người Dùng
+        </h1>
+        <p class="text-muted mb-0">Bạn có thể thay đổi 1 hoặc nhiều thông tin. Để trống nếu không muốn chỉnh sửa.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <form asp-controller="User" asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="card-header bg-light border-0 pt-3">
+            <h5 class="mb-0">
+                <i class="fa-solid fa-id-card me-2"></i>Thông tin tài khoản
+            </h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+
+            <div class="row">
+                <div class="col-md-8 mx-auto">
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-bold">Email (Tên đăng nhập)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fa-solid fa-envelope"></i>
+                            </span>
+                            <input readonly asp-for="Email" type="email"
+                                   class="form-control bg-light" />
+                        </div>
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label fw-bold">Họ và tên</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fa-solid fa-user"></i>
+                            </span>
+                            <input asp-for="FullName" class="form-control"
+                                   placeholder="Bỏ trống nếu không muốn đổi..." />
+                        </div>
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="mb-3">
+                        <label asp-for="Phone" class="form-label fw-bold">Số điện thoại</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fa-solid fa-phone"></i>
+                            </span>
+                            <input asp-for="Phone" class="form-control"
+                                   placeholder="Bỏ trống nếu không muốn đổi..." />
+                        </div>
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+
+                    <!-- New Password -->
+                    <div class="mb-3">
+                        <label asp-for="NewPassword" class="form-label fw-bold">
+                            Mật khẩu mới
+                            <small class="text-muted">(Bỏ trống nếu không đổi)</small>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            <input asp-for="NewPassword" type="password"
+                                   class="form-control"
+                                   placeholder="Nhập mật khẩu mới (không bắt buộc)" />
+                        </div>
+                        <span asp-validation-for="NewPassword" class="text-danger small"></span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="card-footer bg-light border-0 text-end py-3">
+            <a asp-action="Index" asp-controller="User" class="btn btn-secondary me-2">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

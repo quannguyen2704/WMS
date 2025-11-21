@@ -1,0 +1,73 @@
+﻿@model UserRolesViewModel
+
+@{
+    ViewData["Title"] = $"Gán quyền cho {Model.UserEmail}";
+}
+
+<style>
+    .role-item {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+        .role-item:hover {
+            background-color: #f8f9fa;
+        }
+
+    .form-switch .form-check-input {
+        width: 3.5em;
+        height: 1.75em;
+        cursor: pointer;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1"><i class="fa-solid fa-user-shield me-2"></i>Gán Quyền Cho Người Dùng</h1>
+        <p class="text-muted mb-0">Tài khoản: <strong class="text-primary">@Model.UserEmail</strong></p>
+    </div>
+</div>
+
+<!-- 🔔 Hiển thị lỗi tổng quát nếu có -->
+<div asp-validation-summary="All" class="alert alert-danger small" role="alert"></div>
+
+<div class="card shadow-sm">
+    <form asp-action="Manage" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="UserId" />
+
+        <div class="card-header bg-light border-0 pt-3">
+            <h5 class="mb-0"><i class="fa-solid fa-list-check me-2"></i>Chọn các vai trò để gán</h5>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                @for (int i = 0; i < Model.Roles.Count; i++)
+                {
+                    <label class="list-group-item d-flex justify-content-between align-items-center role-item py-3">
+                        <div>
+                            <h6 class="mb-0 fw-bold">@Model.Roles[i].RoleName</h6>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input asp-for="Roles[i].IsSelected" class="form-check-input" role="switch" />
+                            <input type="hidden" asp-for="Roles[i].RoleName" />
+                        </div>
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div class="card-footer bg-light border-0 text-end py-3">
+            <a asp-action="Index" class="btn btn-secondary me-2">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

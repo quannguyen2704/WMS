@@ -1,0 +1,139 @@
+﻿@model WMS.Models.ProductModel
+@{
+    ViewData["Title"] = "Chỉnh sửa sản phẩm";
+}
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+        <i class="fa-solid fa-box-open me-2"></i>
+        <h5 class="mb-0">Chỉnh sửa sản phẩm: @Model.ProductName</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ProductImage" />
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-image me-1"></i> Hình ảnh sản phẩm
+                    </label>
+                    @if (!string.IsNullOrEmpty(Model.ProductImage))
+                    {
+                        <div class="mb-2">
+                            <img src="@Model.ProductImage" class="img-thumbnail" style="max-height: 120px; max-width: 120px;" alt="Hình ảnh hiện tại" />
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted small">Chưa có hình ảnh nào được tải lên.</p>
+                    }
+                    <input type="file" name="productImage" class="form-control shadow-sm" accept="image/*" />
+                    <small class="form-text text-muted">Chọn tệp ảnh mới để thay thế ảnh hiện tại (nếu có).</small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-layer-group me-1"></i> Loại sản phẩm
+                    </label>
+                    <select class="form-select shadow-sm" asp-for="ProductType">
+                        <option value="FinishedProduct">Thành phẩm</option>
+                        <option value="Material">Nguyên liệu</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-barcode me-1"></i> Mã sản phẩm
+                    </label>
+                    <input asp-for="ProductCode" class="form-control shadow-sm" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-tag me-1"></i> Tên sản phẩm
+                    </label>
+                    <input asp-for="ProductName" class="form-control shadow-sm" />
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-align-left me-1"></i> Mô tả
+                    </label>
+                    <input asp-for="ProductDescription" class="form-control shadow-sm" />
+                    <span asp-validation-for="ProductDescription" class="text-danger"></span>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-layer-group me-1"></i> Số lượng
+                    </label>
+                    <input asp-for="ProductQuantity" class="form-control shadow-sm" />
+                    <span asp-validation-for="ProductQuantity" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-location-dot me-1"></i> Vị trí kho
+                    </label>
+                    <input asp-for="Location" class="form-control shadow-sm" />
+                    <span asp-validation-for="Location" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-scale-balanced me-1"></i> Đơn vị
+                    </label>
+                    <select class="form-select shadow-sm" asp-for="ProductUnit" id="unitSelect">
+                        <option value="Cái">Cái</option>
+                        <option value="Bao">Bao</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Tấn">Tấn</option>
+                        <option value="Mét">Mét</option>
+                        <option value="Cuộn">Cuộn</option>
+                        <option value="Thùng">Thùng</option>
+                        <option value="Pallet">Pallet</option>
+                    </select>
+                    <span asp-validation-for="ProductUnit" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold text-primary">
+                        <i class="fa-solid fa-dollar-sign me-2"></i> Đơn giá (<span id="unitLabel">VNĐ / @Model.ProductUnit</span>)
+                    </label>
+                    <div class="input-group">
+                        <input asp-for="ProductPrice" class="form-control" placeholder="Nhập đơn giá..." />
+                        <span class="input-group-text bg-light fw-bold">VNĐ</span>
+                    </div>
+                    <span asp-validation-for="ProductPrice" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <button type="submit" class="btn btn-success shadow-sm px-4">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu thay đổi
+                </button>
+                <a asp-action="Index" class="btn btn-secondary shadow-sm ms-2">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById("unitSelect").addEventListener("change", function () {
+            const unit = this.value || "đơn vị";
+            document.getElementById("unitLabel").innerText = `VNĐ / ${unit}`;
+        });
+    </script>
+}

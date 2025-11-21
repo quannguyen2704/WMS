@@ -1,0 +1,210 @@
+﻿@model IEnumerable<WMS.Models.PurchaseOrderModel>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Quản lý Đơn mua";
+}
+
+<style>
+    .table th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+
+    .fade-in {
+        animation: fadeInRow 0.5s ease-in-out;
+    }
+
+    @@keyframes fadeInRow {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .summary-card {
+        background: #e8f9ee;
+        border-left: 6px solid #28a745;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1">
+            <i class="fa-solid fa-file-invoice-dollar me-2"></i>Quản lý Đơn Mua
+        </h1>
+        <p class="text-muted mb-0">Tạo mới, theo dõi và quản lý các đơn mua nguyên vật liệu.</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a asp-action="ExportToExcel" class="btn btn-success shadow-sm">
+            <i class="fa-solid fa-file-excel me-2"></i>Xuất Excel
+        </a>
+        <a class="btn btn-primary" asp-action="Create">
+            <i class="fa-solid fa-plus me-2"></i>Tạo Đơn Mới
+        </a>
+    </div>
+</div>
+
+@* 🔔 Thông báo *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="get" asp-action="Index" class="row g-3 align-items-end mb-4 shadow-sm p-3 rounded bg-light">
+    <div class="col-md-5">
+        <label class="form-label fw-bold text-primary"><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</label>
+        <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" placeholder="Nhập mã đơn hoặc tên nguyên liệu..." />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-day"></i> Từ ngày</label>
+        <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-check"></i> Đến ngày</label>
+        <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-50"><i class="fa-solid fa-filter"></i> Lọc</button>
+        <a asp-action="Index" class="btn btn-outline-secondary w-50"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+    </div>
+</form>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-start ps-3"><i class="fa-solid fa-barcode"></i> Mã Đơn</th>
+                        <th class="text-start"><i class="fa-solid fa-box"></i> Nguyên Liệu</th>
+                        <th class="text-start"><i class="fa-solid fa-industry"></i> Nhà Cung Cấp</th>
+                        <th><i class="fa-solid fa-cubes"></i> Số Lượng</th>
+                        <th><i class="fa-solid fa-money-bill"></i> Đơn giá (VNĐ)</th>
+                        <th><i class="fa-solid fa-coins"></i> Thành tiền (VNĐ)</th>
+                        <th><i class="fa-solid fa-calendar-day"></i> Ngày Đặt</th>
+                        <th><i class="fa-solid fa-truck"></i> Ngày Nhận</th>
+                        <th><i class="fa-solid fa-signal"></i> Trạng Thái</th>
+                        <th><i class="fa-solid fa-wrench"></i> Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr class="fade-in">
+                                <td class="fw-bold text-start ps-3">@item.PurchaseNumber</td>
+                                <td class="text-start">@item.Product?.ProductName</td>
+                                <td class="text-start">@item.Supplier?.Name</td>
+                                <td>@item.Quantity @item.Unit</td>
+                                <td class="text-end text-success fw-semibold">@String.Format("{0:N0}", item.UnitPrice)</td>
+                                <td class="text-end text-primary fw-bold">@String.Format("{0:N0}", item.Quantity * item.UnitPrice)</td>
+                                <td>@item.OrderDate.ToString("dd/MM/yyyy")</td>
+                                <td>@(item.ReceivedDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                <td>
+                                    @switch (item.Status)
+                                    {
+                                        case WMS.Models.PurchaseStatus.ORDERED:
+                                            <span class="badge bg-warning text-dark">Đã đặt</span>
+                                            ;
+                                            break;
+                                        case WMS.Models.PurchaseStatus.RECEIVED:
+                                            <span class="badge bg-success">Đã nhận</span>
+                                            ;
+                                            break;
+                                        case WMS.Models.PurchaseStatus.CANCELED:
+                                            <span class="badge bg-danger">Đã hủy</span>
+                                            ;
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">Mới tạo</span>
+                                            ;
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                            <i class="fa fa-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa đơn mua này không?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="fa fa-trash-can"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="10" class="text-center py-5">
+                                <i class="fa-solid fa-folder-open fa-3x text-muted mb-3"></i>
+                                <h5 class="fw-bold">
+                                    @(ViewBag.Keyword != null || ViewBag.FromDate != null || ViewBag.ToDate != null
+                                                                    ? "Không tìm thấy đơn mua nào khớp với bộ lọc."
+                                                                    : "Chưa có đơn mua nào")
+                                                                                        </h5>
+                                                                                        <p class="text-muted">
+                                    @(ViewBag.Keyword == null && ViewBag.FromDate == null && ViewBag.ToDate == null
+                                                                    ? "Hãy bắt đầu bằng cách tạo một đơn mua nguyên liệu mới."
+                                                                    : "Vui lòng thử lại với các tiêu chí khác hoặc đặt lại bộ lọc.")
+                            </p>
+                            <a asp-action="Create" class="btn btn-primary mt-2">
+                                <i class="fa fa-plus"></i> Tạo Đơn Mới
+                            </a>
+                        </td>
+                    </tr>
+                                        }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <!-- 💰 Tổng hợp -->
+    <div class="summary-card text-center fade-in">
+        <h6 class="fw-semibold text-secondary mb-1">💰 Tổng giá trị tất cả đơn mua</h6>
+        <h3 class="fw-bold text-success mb-0">
+            @String.Format("{0:N0}", ViewBag.TotalPurchaseValue) VNĐ
+        </h3>
+    </div>
+}

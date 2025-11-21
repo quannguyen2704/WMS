@@ -1,0 +1,321 @@
+﻿@model WMS.Models.ProductionOrderModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tạo lệnh sản xuất";
+}
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-header bg-primary text-white d-flex align-items-center">
+        <i class="fa-solid fa-industry me-2"></i>
+        <h5 class="mb-0">Tạo lệnh sản xuất</h5>
+    </div>
+
+    <div class="card-body">
+        <form asp-action="Create" method="post" class="needs-validation" novalidate>
+            @Html.AntiForgeryToken()
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@ViewBag.ErrorMessage
+                </div>
+            }
+
+            <!-- 🔹 MÃ LỆNH SẢN XUẤT -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    <i class="fa-solid fa-barcode me-1 text-primary"></i> Mã lệnh sản xuất (tự sinh)
+                </label>
+                <input asp-for="OrderNumber" class="form-control shadow-sm bg-light" readonly value="(Sẽ tự sinh khi lưu)" />
+            </div>
+
+            <!-- 🔹 THÀNH PHẨM -->
+            <div class="border rounded p-3 mb-4 bg-light-subtle">
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="fa-solid fa-box me-2"></i> Thông tin thành phẩm
+                </h6>
+
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label">Sản phẩm</label>
+                        <select asp-for="ProductId" id="productSelect"
+                                class="form-select shadow-sm"
+                                asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductName"))">
+                            <option value="">-- Chọn sản phẩm --</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger"></span>
+
+                        <!-- 🏭 Thông tin tồn kho thành phẩm -->
+                        <div id="productStockInfo" class="mt-1 small text-muted"></div>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label">Đơn vị</label>
+                        <input id="productUnit" class="form-control shadow-sm" readonly placeholder="Tự động hiển thị" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Số lượng</label>
+                        <input asp-for="Quantity" id="productQty" class="form-control shadow-sm" placeholder="Nhập số lượng" />
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Đơn giá (VNĐ)</label>
+                        <input asp-for="UnitPrice" id="productPrice" type="number" step="0.01" class="form-control shadow-sm" placeholder="Đơn giá thành phẩm" />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <!-- 🗓️ Ngày bắt đầu & Ngày kết thúc dự kiến -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-calendar-day text-primary me-1"></i> Ngày bắt đầu
+                        </label>
+                        <input asp-for="StartDate" type="date" class="form-control shadow-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-calendar-check text-success me-1"></i> Ngày kết thúc dự kiến
+                        </label>
+                        <input asp-for="PlannedEndDate" type="date" class="form-control shadow-sm" />
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 🔹 DANH SÁCH NGUYÊN LIỆU -->
+            <div class="border rounded p-3 bg-light-subtle mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-secondary mb-0">
+                        <i class="fa-solid fa-flask me-2"></i> Nguyên liệu sử dụng
+                    </h6>
+                    <button type="button" id="add-material" class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-plus"></i> Thêm nguyên liệu
+                    </button>
+                </div>
+
+                <table class="table table-bordered align-middle shadow-sm" id="materialsTable">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th>Nguyên liệu</th>
+                            <th>Đơn vị</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá (VNĐ)</th>
+                            <th>Thành tiền (VNĐ)</th>
+                            <th>Tồn kho</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot class="fw-bold text-end">
+                        <tr class="table-light">
+                            <td colspan="5">Tổng chi phí nguyên liệu:</td>
+                            <td id="totalMaterial" class="text-danger">0</td>
+                            <td></td>
+                        </tr>
+                        <tr class="table-info">
+                            <td colspan="5">Tổng giá trị thành phẩm:</td>
+                            <td id="totalProduct" class="text-success">0</td>
+                            <td></td>
+                        </tr>
+                        <!-- ĐÃ XÓA DÒNG LỢI NHUẬN TẠM TÍNH -->
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- 🔹 GHI CHÚ -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    <i class="fa-solid fa-pen-to-square me-1 text-primary"></i> Ghi chú
+                </label>
+                <textarea asp-for="Notes" class="form-control shadow-sm" rows="3" placeholder="Nhập ghi chú nếu có"></textarea>
+            </div>
+
+            <!-- 🔹 NÚT LƯU -->
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-success shadow-sm px-4">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Lưu lệnh sản xuất
+                </button>
+                <a asp-action="Index" class="btn btn-secondary shadow-sm ms-2 px-3">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // 🧩 Dữ liệu sản phẩm (đơn vị + giá)
+        const productData = {
+            @foreach (var p in ViewBag.Products)
+            {
+                    <text>"@p.Id": { unit: "@p.ProductUnit", price: @((decimal)(p.ProductPrice ?? 0)) },</text>
+            }
+        };
+
+        // 🧩 Khi chọn sản phẩm → hiển thị đơn vị, đơn giá, tồn kho
+        $('#productSelect').change(function () {
+            const id = $(this).val();
+            const info = $('#productStockInfo');
+
+            if (id) {
+                // Lấy đơn vị và đơn giá từ ViewBag
+                const data = productData[id] || { unit: '', price: 0 };
+                $('#productUnit').val(data.unit);
+                $('#productPrice').val(data.price);
+
+                // Gọi API lấy tồn kho
+                $.getJSON('@Url.Action("GetInventoryStock", "Production", new { area = "Admin" })', { id: id })
+                    .done(function (res) {
+                        if (res.success) {
+                            $('#productQty').data('stock', res.stock);
+                            info.html(`🏭 <span class="text-muted">Tồn kho hiện tại: ${res.stock} ${res.unit}</span>`);
+                        } else {
+                            info.html(`<span class="text-danger">Không lấy được dữ liệu tồn kho!</span>`);
+                        }
+                    })
+                    .fail(function () {
+                        info.html(`<span class="text-danger">Lỗi khi truy vấn tồn kho!</span>`);
+                    });
+            } else {
+                $('#productUnit').val('');
+                $('#productPrice').val('');
+                info.empty();
+            }
+        });
+
+        // ⚠️ Cảnh báo khi số lượng vượt ngưỡng giả định (kho đầy)
+        $(document).on('input', '#productQty', function () {
+            const stock = parseFloat($(this).data('stock')) || 0;
+            const qty = parseFloat($(this).val()) || 0;
+            const info = $('#productStockInfo');
+            const unit = $('#productUnit').val() || '';
+
+            if (qty > 0 && qty + stock > 5000) {
+                info.html(`
+                    ⚠️ <span class="text-danger">
+                        Kho có thể quá tải (hiện tồn ${stock} ${unit}, sản xuất thêm ${qty} ${unit}).<br>
+                        👉 Hãy kiểm tra không gian lưu trữ hoặc xuất kho trước.
+                    </span>
+                `);
+            } else if (stock > 0 && qty <= stock) {
+                info.html(`🏭 <span class="text-muted">Tồn kho hiện tại: ${stock} ${unit}</span>`);
+            }
+        });
+
+        // 🧩 Thêm nguyên liệu
+        let index = 0;
+        $('#add-material').click(() => {
+            let options = "";
+            @foreach (var m in ViewBag.Materials)
+            {
+                    <text>options += `<option value="@m.Id" data-unit="@m.ProductUnit" data-price="@m.ProductPrice">@m.ProductName</option>`;</text>
+            }
+
+            $('#materialsTable tbody').append(`
+                <tr>
+                    <td>
+                        <select name="Materials[${index}].MaterialId" class="form-select material-select">
+                            <option value="">-- Chọn nguyên liệu --</option>
+                            ${options}
+                        </select>
+                    </td>
+                    <td><input name="Materials[${index}].Unit" class="form-control unit" readonly /></td>
+                    <td><input name="Materials[${index}].PlannedQuantity" type="number" step="0.01" class="form-control qty" /></td>
+                    <td><input name="Materials[${index}].UnitPrice" type="number" step="0.01" class="form-control price" /></td>
+                    <td class="text-end fw-semibold text-danger total">0</td>
+                    <td class="stock-info text-center text-muted"><small>-</small></td>
+                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove"><i class="fa fa-trash"></i></button></td>
+                </tr>`);
+            index++;
+        });
+
+        // Xóa nguyên liệu
+        $(document).on('click', '.remove', function () {
+            $(this).closest('tr').remove();
+            updateTotals();
+        });
+
+        // Khi chọn nguyên liệu → tự lấy đơn vị, giá, tồn kho
+        $(document).on('change', '.material-select', function () {
+            const row = $(this).closest('tr');
+            const opt = $(this).find(':selected');
+            const unit = opt.data('unit') || '';
+            const price = opt.data('price') || 0;
+            const id = $(this).val();
+
+            row.find('.unit').val(unit);
+            row.find('.price').val(price);
+            row.data('stock', 0);
+
+            if (id) {
+                $.getJSON('@Url.Action("GetInventoryStock", "Production", new { area = "Admin" })', { id: id })
+                    .done(function (res) {
+                        if (res.success) {
+                            const stock = parseFloat(res.stock) || 0;
+                            row.data('stock', stock);
+                            row.find('.stock-info').html(`🏭 <small class="text-muted">Tồn: ${stock.toLocaleString('vi-VN')} ${res.unit}</small>`);
+                        } else {
+                            row.find('.stock-info').html(`<small class="text-danger">Không tìm thấy tồn kho!</small>`);
+                        }
+                    })
+                    .fail(() => row.find('.stock-info').html(`<small class="text-danger">Lỗi khi lấy tồn kho!</small>`));
+            } else {
+                row.find('.stock-info').empty();
+            }
+
+            updateTotals();
+        });
+
+        // Khi nhập số lượng hoặc đơn giá → cập nhật tổng và cảnh báo thiếu
+        $(document).on('input', '.qty, .price', function () {
+            const row = $(this).closest('tr');
+            const qty = parseFloat(row.find('.qty').val()) || 0;
+            const price = parseFloat(row.find('.price').val()) || 0;
+            const total = qty * price;
+            const stock = parseFloat(row.data('stock')) || 0;
+            const unit = row.find('.unit').val() || '';
+
+            row.find('.total').text(total.toLocaleString('vi-VN'));
+
+            if (stock > 0 && qty > stock) {
+                const shortage = qty - stock;
+                row.find('.stock-info').html(`
+                    ⚠️ <small class="text-danger">
+                        Thiếu ${shortage.toLocaleString('vi-VN')} ${unit}!<br>
+                        <a href="/Admin/Purchase/Create" class="text-primary text-decoration-underline">
+                            ➕ Tạo phiếu mua hàng
+                        </a>
+                    </small>
+                `);
+            } else if (stock > 0 && qty <= stock) {
+                row.find('.stock-info').html(`🏭 <small class="text-muted">Tồn: ${stock.toLocaleString('vi-VN')} ${unit}</small>`);
+            }
+
+            updateTotals();
+        });
+
+        // 💰 Tổng tiền NVL và sản phẩm
+        function updateTotals() {
+            let totalMaterial = 0;
+            $('#materialsTable tbody tr').each(function () {
+                const qty = parseFloat($(this).find('.qty').val()) || 0;
+                const price = parseFloat($(this).find('.price').val()) || 0;
+                totalMaterial += qty * price;
+            });
+
+            const productQty = parseFloat($('#productQty').val()) || 0;
+            const productPrice = parseFloat($('#productPrice').val()) || 0;
+            const totalProduct = productQty * productPrice;
+
+            $('#totalMaterial').text(totalMaterial.toLocaleString('vi-VN'));
+            $('#totalProduct').text(totalProduct.toLocaleString('vi-VN'));
+        }
+    </script>
+}
+

@@ -1,0 +1,357 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | WMS</title>
+
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/WMS.styles.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/_WarehouseTableStyle.css" rel="stylesheet" />
+    @RenderSection("Styles", required: false)
+</head>
+<body class="d-flex flex-column min-vh-100">
+    @{
+        // Lấy tên Controller và Action hiện tại để kiểm tra active
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+        // Định nghĩa các biến kiểm tra vai trò
+        var isAdmin = User.IsInRole("Admin");
+        var isManager = User.IsInRole("Manager");
+        var isWarehouseStaff = User.IsInRole("Nhân viên kho");
+        var isCustomer = User.IsInRole("Khách hàng");
+
+        // Quyền truy cập các mục quản lý hệ thống
+        // CHỈ ADMIN/MANAGER/KHO được xem các mục Quản lý kho (nhập/xuất/tồn kho)
+        var canAccessWarehouseManagement = isAdmin || isManager || isWarehouseStaff;
+
+        // Quản lý sản xuất, nhà cung cấp (Admin/Manager/Kho)
+        var canAccessProductionSupplier = isAdmin || isManager || isWarehouseStaff;
+
+        // Quản lý hồ sơ khách hàng (Customer Index)
+        var canAccessCustomerManagement = isAdmin || isManager;
+
+        // GỘP LOGIC ACTIVE CLASS TẠI ĐẦU KHỐI C# LỚN
+        var homeActiveClass = currentController == "Home" ? "active" : "text-primary";
+        var dashActiveClass = currentController == "Dashboard" ? "active" : "";
+        var productActiveClass = currentController == "Product" ? "active" : "";
+        var productionActiveClass = currentController == "Production" ? "active" : "";
+
+        // Quản lý Kho (Cha và con)
+        var warehouseControllers = new[] { "Warehouse", "Inventory", "WarehouseOrder" };
+        var warehouseMenuClass = warehouseControllers.Contains(currentController) ? "active" : "";
+        var importClass = currentController == "Warehouse" && currentAction == "Import" ? "active" : "";
+        var exportClass = currentController == "Warehouse" && currentAction == "Export" ? "active" : "";
+        var inventoryClass = currentController == "Inventory" ? "active" : "";
+        var whOrderClass = currentController == "WarehouseOrder" ? "active" : "";
+
+        // Nhà Cung Cấp (Cha và con)
+        var supplierControllers = new[] { "Supplier", "Purchase" };
+        var supplierMenuClass = supplierControllers.Contains(currentController) ? "active" : "";
+        var supClass = currentController == "Supplier" ? "active" : "";
+        var purchaseClass = currentController == "Purchase" ? "active" : "";
+
+        // Khách hàng (Cha và con)
+        var customerControllers = new[] { "Customer", "Order" };
+        var customerMenuClass = customerControllers.Contains(currentController) ? "active" : "";
+        var custClass = currentController == "Customer" ? "active" : "";
+        var orderClass = currentController == "Order" ? "active" : "";
+
+        // Người dùng (Cha và con)
+        var userControllers = new[] { "User", "Role", "UserRole" };
+        var userMenuClass = userControllers.Contains(currentController) ? "active" : "";
+        var userClass = currentController == "User" && currentAction == "Index" ? "active" : "";
+        var roleClass = currentController == "Role" ? "active" : "";
+        var userRoleClass = currentController == "UserRole" ? "active" : "";
+    }
+    <style>
+        /* CSS TÙY CHỈNH CHO MENU ACTIVE */
+        .nav-link.active, .dropdown-item.active {
+            color: white !important;
+            background-color: var(--bs-primary) !important;
+            border-radius: 4px;
+        }
+
+        .nav-link.dropdown-toggle.active {
+            color: white !important;
+            background-color: var(--bs-primary) !important;
+        }
+
+        .dropdown-item:active {
+            background-color: var(--bs-primary) !important;
+            color: white !important;
+        }
+    </style>
+
+    <!-- HEADER -->
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom shadow-sm mb-4">
+            <div class="container-fluid">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="navbar-brand fw-bold text-primary">
+                    <i class="fa-solid fa-cubes"></i> WMS
+                </a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar"
+                        aria-controls="topNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div id="topNavbar" class="collapse navbar-collapse">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <!-- Trang chủ (Mọi người đều thấy) -->
+                        <li class="nav-item">
+                            <a asp-area="" class="nav-link @homeActiveClass" asp-controller="Home" asp-action="Index">
+                                <i class="fa-solid fa-house"></i> Trang chủ
+                            </a>
+                        </li>
+
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <!-- Dashboard (CHỈ DÀNH CHO ADMIN VÀ MANAGER) -->
+                            @if (isAdmin || isManager)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @dashActiveClass" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">
+                                        <i class="fa-solid fa-chart-line"></i> Dashboard
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Sản phẩm (Chỉ dành cho Admin/Manager/Kho) -->
+                            @if (canAccessWarehouseManagement)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @productActiveClass" asp-area="Admin" asp-controller="Product" asp-action="Index">
+                                        <i class="fa-solid fa-box"></i> Sản phẩm
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Quản lý kho (Dành cho Admin/Manager/WarehouseStaff) -->
+                            @if (canAccessWarehouseManagement)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle @warehouseMenuClass" href="#" id="warehouseMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-warehouse"></i> Quản lý kho
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="warehouseMenu">
+
+                                        <!-- Chức năng kho chi tiết (Nhập, Xuất, Tồn kho) -->
+                                        <li><a class="dropdown-item @importClass" asp-area="Admin" asp-controller="Warehouse" asp-action="Import"><i class="fa-solid fa-download"></i> Nhập kho</a></li>
+
+                                        <li><a class="dropdown-item @exportClass" asp-area="Admin" asp-controller="Warehouse" asp-action="Export"><i class="fa-solid fa-upload"></i> Xuất kho</a></li>
+
+                                        <li><a class="dropdown-item @inventoryClass" asp-area="Admin" asp-controller="Inventory" asp-action="Index"><i class="fa-solid fa-boxes-stacked"></i> Tồn kho</a></li>
+
+                                        <li>
+                                            <!-- Đơn hàng khách hàng (Admin/Kho) -->
+                                            <a class="dropdown-item @whOrderClass" asp-area="Admin" asp-controller="WarehouseOrder" asp-action="Index">
+                                                <i class="fa-solid fa-list-check"></i> Đơn hàng khách hàng
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+                            }
+
+                            <!-- 🏭 Sản xuất (Dành cho Admin/Manager và Nhân viên kho) -->
+                            @if (canAccessProductionSupplier)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @productionActiveClass" asp-area="Admin" asp-controller="Production" asp-action="Index">
+                                        <i class="fa-solid fa-industry"></i> Sản xuất
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- 🚚 Nhà cung cấp / Đơn mua (Dành cho Admin/Manager và Nhân viên kho) -->
+                            @if (canAccessProductionSupplier)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle @supplierMenuClass" href="#" id="supplierDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-truck"></i> Nhà cung cấp
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="supplierDropdown">
+                                        <li>
+                                            <a class="dropdown-item @supClass" asp-area="Admin" asp-controller="Supplier" asp-action="Index">
+                                                <i class="fa-solid fa-address-book me-2 text-primary"></i> Thông tin nhà cung cấp
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item @purchaseClass" asp-area="Admin" asp-controller="Purchase" asp-action="Index">
+                                                <i class="fa-solid fa-cart-plus me-2 text-success"></i> Đặt hàng
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+
+
+                            <!-- Khách hàng / Đặt hàng (Dành cho Admin, Manager và Khách hàng) -->
+                            // Khách hàng / Đặt hàng (Dành cho Admin, Manager, Nhân viên kho và Khách hàng)
+                            @if (isAdmin || isManager || isWarehouseStaff || isCustomer)
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle @customerMenuClass" href="#" id="customerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa fa-users"></i> Khách hàng
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="customerDropdown">
+                                        @if (canAccessCustomerManagement)   // = isAdmin || isManager
+                                        {
+                                            <!-- Chỉ Admin/Manager mới quản lý được danh sách khách hàng -->
+                                            <li>
+                                                <a class="dropdown-item @custClass" asp-area="Admin" asp-controller="Customer" asp-action="Index">
+                                                    <i class="fa-solid fa-address-book me-2 text-primary"></i> Thông tin khách hàng
+                                                </a>
+                                            </li>
+                                        }
+                                        <li>
+                                            <!-- Đơn hàng: Admin, Manager, Nhân viên kho sẽ thấy tất cả; Khách hàng thấy đơn của chính họ (xử lý trong Controller) -->
+                                            <a class="dropdown-item @orderClass" asp-area="Admin" asp-controller="Order" asp-action="Index">
+                                                <i class="fa fa-shopping-cart me-2 text-success"></i> Đặt hàng
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+
+
+                            <!-- Người dùng (Chỉ dành cho Admin) -->
+                            @if (isAdmin)
+                            {
+
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle @userMenuClass" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-user-gear"></i> Người dùng
+                                    </a>
+                                    <ul class="dropdown-menu" aria-labelledby="userMenu">
+                                        <li><a class="dropdown-item @userClass" asp-area="Admin" asp-controller="User" asp-action="Index"><i class="fa-solid fa-users"></i> Quản lý người dùng</a></li>
+
+                                        <li><a class="dropdown-item @roleClass" asp-area="Admin" asp-controller="Role" asp-action="Index"><i class="fa-solid fa-user-shield"></i> Vai trò</a></li>
+
+                                        <li><a class="dropdown-item @userRoleClass" asp-area="Admin" asp-controller="UserRole" asp-action="Index"><i class="fa-solid fa-user-tag"></i> Gán vai trò</a></li>
+                                    </ul>
+                                </li>
+                            }
+                        }
+                    </ul>
+                    <ul class="navbar-nav ms-auto">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-dark fw-semibold" href="#" id="userProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-circle-user me-1 text-primary"></i>
+                                    @User.Identity.Name
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userProfileDropdown">
+                                    <li>
+                                        <span class="dropdown-item-text text-muted">
+                                            <i class="fa-solid fa-envelope me-2 text-secondary"></i>
+                                            @User.Identity.Name
+                                        </span>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <!-- Đăng xuất -->
+                                    <li class="nav-item">
+                                        <a href="javascript:void(0);" class="nav-link text-danger"
+                                           onclick="document.getElementById('logoutForm').submit();">
+                                            <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                                        </a>
+                                        <form id="logoutForm" asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
+                                            @Html.AntiForgeryToken()
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <!-- Đăng nhập / Đăng ký -->
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                    <i class="fa-solid fa-user-plus"></i> Đăng ký
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- MAIN -->
+    <div class="container flex-grow-1">
+        <main class="pb-4">
+
+            <!-- 🔔 Thông báo TempData dùng chung (Success + Error) -->
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                    <i class="fa-solid fa-circle-check me-1"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i>
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </main>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="footer bg-light border-top mt-auto py-4">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="fw-bold text-primary">
+                        <i class="fa-solid fa-cubes"></i> WMS
+                    </h5>
+                    <p class="text-muted small">
+                        Hệ thống quản lý kho hàng (Warehouse Management System) hỗ trợ quản lý sản phẩm,
+                        nhập - xuất kho, sản xuất, nhà cung cấp và người dùng.
+                    </p>
+                </div>
+
+                <div class="text-end">
+                    <h6 class="fw-bold">Liên hệ</h6>
+                    <p class="text-muted small mb-1"><i class="fa-solid fa-envelope"></i> nquagquan02@gmail.com</p>
+                    <p class="text-muted small mb-1"><i class="fa-solid fa-phone"></i> +84 34156095</p>
+                    <div class="mt-2">
+                        <a href="#" class="text-muted me-3"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-muted"><i class="fab fa-linkedin fa-lg"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    &copy; @DateTime.Now.Year - Warehouse Management System | All Rights Reserved
+                </small>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

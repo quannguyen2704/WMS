@@ -1,0 +1,160 @@
+﻿@model WMS.Models.WarehouseTransactionModel
+@{
+    ViewData["Title"] = "Nhập kho";
+}
+
+<div class="container mt-4">
+    <!-- 🧭 Tiêu đề & nút quay lại -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="fa-solid fa-boxes-packing me-2"></i> Nhập hàng vào kho
+        </h2>
+        <a asp-area="Admin" asp-controller="Warehouse" asp-action="ImportIndex" class="btn btn-outline-primary shadow-sm">
+            <i class="fa fa-list"></i> Danh sách nhập kho
+        </a>
+    </div>
+
+    <!-- 🗂 Form nhập kho -->
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-4">
+            <form asp-area="Admin" asp-controller="Warehouse" asp-action="Import" method="POST">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <!-- 🔹 Chọn loại & sản phẩm -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Loại sản phẩm</label>
+                        <select id="ProductType" class="form-select shadow-sm">
+                            <option value="">-- Chọn loại sản phẩm --</option>
+                            <option value="Material">Nguyên liệu</option>
+                            <option value="FinishedProduct">Thành phẩm</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Sản phẩm</label>
+                        <select asp-for="ProductId" id="ProductId" class="form-select shadow-sm">
+                            <option value="">-- Chọn sản phẩm --</option>
+                        </select>
+                        <div id="stockInfo" class="mt-2 small text-muted"></div> <!-- 🏭 Hiển thị tồn kho hiện tại -->
+                    </div>
+                </div>
+
+                <!-- 🔹 Đơn vị & nhà cung cấp -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Đơn vị</label>
+                        <input id="Unit" asp-for="Unit" class="form-control shadow-sm bg-light" readonly />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Nhà cung cấp</label>
+                        <select asp-for="SupplierId" class="form-select shadow-sm" asp-items="ViewBag.Suppliers">
+                            <option value="">-- Chọn nhà cung cấp --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 🔹 Số lượng, đơn giá, thành tiền -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-primary">Số lượng nhập</label>
+                        <input asp-for="Quantity" id="Quantity" class="form-control shadow-sm" placeholder="Nhập số lượng..." />
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-primary">Đơn giá (VNĐ)</label>
+                        <input asp-for="UnitPrice" id="UnitPrice" class="form-control shadow-sm" placeholder="Nhập đơn giá..." />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-primary">Thành tiền (VNĐ)</label>
+                        <input id="TotalValue" class="form-control shadow-sm bg-light fw-bold text-success" readonly />
+                    </div>
+                </div>
+
+                <!-- 🔹 Ghi chú -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-primary">Ghi chú</label>
+                    <input asp-for="Notes" class="form-control shadow-sm" placeholder="Ghi chú thêm (nếu có)..." />
+                </div>
+
+                <!-- 🔹 Nút lưu -->
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow">
+                    <i class="fa fa-download me-2"></i> Lưu nhập kho
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            // 🔄 Load danh sách sản phẩm theo loại
+            $("#ProductType").on("change", function () {
+                var type = $(this).val();
+                $("#ProductId").empty().append('<option value="">-- Chọn sản phẩm --</option>');
+                $("#Unit").val("");
+                $("#stockInfo").empty();
+
+                if (type) {
+                    $.getJSON('@Url.Action("GetProductsByType", "Warehouse", new { area = "Admin" })', { type: type })
+                        .done(function (data) {
+                            $.each(data || [], function (i, item) {
+                                // ✅ Chỉ hiển thị tên sản phẩm
+                                $("#ProductId").append('<option value="' + item.id + '" data-unit="' + item.unit + '">' + item.name + '</option>');
+                            });
+                        });
+                }
+            });
+
+            // 🧾 Khi chọn sản phẩm → hiển thị tồn kho
+            $("#ProductId").on("change", function () {
+                var productId = $(this).val();
+                var unit = $(this).find(':selected').data('unit');
+                $("#Unit").val(unit || "");
+                $("#stockInfo").empty();
+
+                if (productId) {
+                    $.getJSON('@Url.Action("GetInventoryStock", "Warehouse", new { area = "Admin" })', { id: productId })
+                        .done(function (res) {
+                            if (res.success) {
+                                $("#stockInfo").html(
+                                    "🏭 Tồn kho hiện tại: <b class='text-success'>" + res.stock + " " + res.unit + "</b>"
+                                );
+                            } else {
+                                $("#stockInfo").html("<span class='text-danger'>Không tìm thấy dữ liệu tồn kho!</span>");
+                            }
+                        })
+                        .fail(function () {
+                            $("#stockInfo").html("<span class='text-danger'>Lỗi khi truy vấn tồn kho!</span>");
+                        });
+                }
+            });
+
+            // 💰 Tính thành tiền tự động
+            function updateTotal() {
+                var qty = parseFloat($("#Quantity").val()) || 0;
+                var price = parseFloat($("#UnitPrice").val()) || 0;
+                $("#TotalValue").val((qty * price).toLocaleString('vi-VN'));
+            }
+
+            $("#Quantity, #UnitPrice").on("input", updateTotal);
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        #stockInfo {
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+
+            #stockInfo b {
+                font-weight: 600;
+                color: #198754;
+            }
+    </style>
+}

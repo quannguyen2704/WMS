@@ -1,0 +1,236 @@
+﻿@model X.PagedList.IPagedList<WMS.Models.WarehouseTransactionModel>
+@using X.PagedList.Mvc.Core
+
+@{
+    ViewData["Title"] = "Danh sách nhập kho";
+}
+
+<div class="container mt-4">
+    <!-- 🌟 Tiêu đề & nút chức năng -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold text-primary">
+            <i class="fa-solid fa-truck-ramp-box me-2"></i> Danh sách nhập kho
+        </h2>
+        <div>
+            <a asp-action="Import" class="btn btn-primary me-2">
+                <i class="fa fa-plus"></i> Thêm mới
+            </a>
+            <a asp-action="ExportToExcel" asp-route-type="Import" class="btn btn-outline-primary">
+                <i class="fa fa-file-excel"></i> Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- ✅ Thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <!-- 🔍 Bộ lọc -->
+    <form method="get" asp-action="ImportIndex" class="row g-3 align-items-end mb-4 shadow-sm p-3 border rounded bg-light">
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm sản phẩm
+            </label>
+            <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" placeholder="Nhập tên sản phẩm..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-calendar-day"></i> Từ ngày
+            </label>
+            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-calendar-check"></i> Đến ngày
+            </label>
+            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-50">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+            <a asp-action="ImportIndex" class="btn btn-outline-secondary w-50">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+            </a>
+        </div>
+    </form>
+
+    <!-- 📋 Bảng dữ liệu -->
+    <table id="importTable" class="table table-bordered table-hover align-middle shadow-sm">
+        <thead class="table-primary text-center">
+            <tr>
+                <th><i class="fa-solid fa-barcode"></i> Mã SP</th>
+                <th><i class="fa-solid fa-box"></i> Sản phẩm</th>
+                <th><i class="fa-solid fa-weight-scale"></i> Đơn vị</th>
+                <th><i class="fa-solid fa-user-tie"></i> Nhà cung cấp</th>
+                <th><i class="fa-solid fa-cubes"></i> Số lượng</th>
+                <th><i class="fa-solid fa-money-bill-wave"></i> Đơn giá (VNĐ)</th>
+                <th><i class="fa-solid fa-coins"></i> Thành tiền (VNĐ)</th>
+                <th><i class="fa-solid fa-calendar-day"></i> Ngày nhập</th>
+                <th><i class="fa-solid fa-pen"></i> Ghi chú</th>
+                <th><i class="fa-solid fa-gear"></i> Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                decimal totalQty = 0;
+                decimal totalValue = 0;
+                var now = DateTime.Now;
+
+                foreach (var item in Model)
+                {
+                    totalQty += item.Quantity;
+                    totalValue += item.Quantity * item.UnitPrice;
+                    bool isNew = (now - item.TransactionDate).TotalHours <= 24;
+
+                    <tr class="@(isNew ? "new-row" : "") text-center">
+                        <td>@item.Product?.ProductCode</td>
+                        <td>@item.Product?.ProductName</td>
+                        <td>@item.Unit</td>
+                        <td>@item.Supplier?.Name</td>
+                        <td class="text-end fw-semibold">@item.Quantity</td>
+                        <td class="text-end">@String.Format("{0:N0}", item.UnitPrice)</td>
+                        <td class="text-end text-success fw-bold">@String.Format("{0:N0}", item.Quantity * item.UnitPrice)</td>
+                        <td>
+                            @item.TransactionDate.ToString("dd/MM/yyyy HH:mm")
+                            @if (isNew)
+                            {
+                                <span class="badge bg-success ms-2">Mới</span>
+                            }
+                        </td>
+                        <td>@item.Notes</td>
+                        <td>
+                            <a asp-action="ImportEdit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">
+                                <i class="fa-solid fa-pen-to-square"></i> Sửa
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Xác nhận xóa phiếu nhập kho này?');">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="fa-solid fa-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+
+                <tr class="fw-bold table-info text-end">
+                    <td colspan="4">Tổng cộng:</td>
+                    <td>@totalQty</td>
+                    <td></td>
+                    <td class="text-success">@String.Format("{0:N0}", totalValue)</td>
+                    <td colspan="3"></td>
+                </tr>
+            }
+            else
+            {
+                <tr>
+                    <td colspan="10" class="text-center text-muted">
+                        <i class="fa-solid fa-circle-info me-1"></i> Không có dữ liệu nhập kho trong khoảng thời gian này.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- 📄 Phân trang -->
+    <div class="d-flex justify-content-center mt-4">
+        @Html.PagedListPager(Model, page => Url.Action("ImportIndex", new {
+        page,
+        keyword = ViewBag.Keyword,
+        fromDate = ViewBag.FromDate,
+        toDate = ViewBag.ToDate
+                }),
+                new PagedListRenderOptions
+                {
+                    LiElementClasses = new[] { "page-item" },
+                    PageClasses = new[] { "page-link" },
+                    UlElementClasses = new[] { "pagination pagination-sm" },
+                    ActiveLiElementClass = "active"
+                })
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        #importTable tbody tr:hover {
+            background-color: #eaf3ff !important;
+            transition: background-color 0.25s ease-in-out;
+        }
+
+        @@keyframes fadeInHighlight {
+            0% {
+                background-color: #b8e7ff;
+                opacity: 0.4;
+            }
+
+            100% {
+                background-color: #d1ecff;
+                opacity: 1;
+            }
+        }
+
+        .new-row {
+            animation: fadeInHighlight 1.5s ease-in-out;
+            background-color: #d1ecff !important;
+        }
+
+        .badge.bg-success {
+            font-size: 0.75rem;
+            vertical-align: middle;
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        @@keyframes pulse {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            to {
+                transform: scale(1.15);
+                opacity: 0.8;
+            }
+        }
+
+        .btn-warning {
+            color: #fff;
+            background-color: #f0ad4e;
+            border: none;
+        }
+
+            .btn-warning:hover {
+                background-color: #ec971f;
+            }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+        }
+
+            .btn-danger:hover {
+                background-color: #c82333;
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('#importTable').DataTable({
+                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json' },
+                paging: false,
+                info: false
+            });
+        });
+    </script>
+}

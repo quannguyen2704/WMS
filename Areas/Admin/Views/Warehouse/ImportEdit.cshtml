@@ -1,0 +1,148 @@
+﻿@model WMS.Models.WarehouseTransactionModel
+@{
+    ViewData["Title"] = "Chỉnh sửa phiếu nhập kho";
+}
+
+<div class="container mt-4">
+    <!-- 🧭 Tiêu đề & nút quay lại -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">
+            <i class="fa-solid fa-pen-to-square me-2"></i> Chỉnh sửa phiếu nhập kho
+        </h2>
+        <a asp-area="Admin" asp-controller="Warehouse" asp-action="ImportIndex"
+           class="btn btn-outline-primary shadow-sm">
+            <i class="fa fa-list"></i> Danh sách nhập kho
+        </a>
+    </div>
+
+    <!-- 🗂 Form chỉnh sửa -->
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-4">
+            <form asp-area="Admin" asp-controller="Warehouse" asp-action="ImportEdit" method="POST">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="TransactionType" />
+
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <!-- Nhà cung cấp & Sản phẩm -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Nhà cung cấp</label>
+                        <select asp-for="SupplierId" asp-items="ViewBag.Suppliers" class="form-select shadow-sm">
+                            <option value="">-- Chọn nhà cung cấp --</option>
+                        </select>
+                        <span asp-validation-for="SupplierId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-primary">Sản phẩm</label>
+                        <select asp-for="ProductId" class="form-select shadow-sm" disabled>
+                            @{
+                                var products = ViewBag.Products as List<SelectListItem>;
+                                if (products != null)
+                                {
+                                    foreach (var item in products)
+                                    {
+                                        if (item.Value == Model.ProductId.ToString())
+                                        {
+                                            <option value="@item.Value" selected>@item.Text</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@item.Value">@item.Text</option>
+                                        }
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Đơn vị - Số lượng - Đơn giá - Thành tiền -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-primary">Đơn vị</label>
+                        <input asp-for="Unit" class="form-control shadow-sm bg-light" readonly />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-primary">Số lượng nhập</label>
+                        <input asp-for="Quantity" id="Quantity" class="form-control shadow-sm" placeholder="Nhập số lượng..." />
+                        <span asp-validation-for="Quantity" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-primary">Đơn giá (VNĐ)</label>
+                        <input asp-for="UnitPrice" id="UnitPrice" class="form-control shadow-sm" placeholder="Nhập đơn giá..." />
+                        <span asp-validation-for="UnitPrice" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-primary">Thành tiền (VNĐ)</label>
+                        <input id="TotalValue" class="form-control shadow-sm bg-light fw-bold text-success" readonly />
+                    </div>
+                </div>
+
+                <!-- Ghi chú -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold text-primary">Ghi chú</label>
+                    <input asp-for="Notes" class="form-control shadow-sm" placeholder="Ghi chú thêm (nếu có)..." />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow">
+                    <i class="fa-solid fa-floppy-disk me-2"></i> Cập nhật phiếu nhập kho
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+
+        .card {
+            border-radius: 1rem;
+        }
+
+        .form-label {
+            font-size: 0.95rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border: none;
+        }
+
+            .btn-primary:hover {
+                background: linear-gradient(90deg, #0056b3, #004494);
+            }
+    </style>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // 💰 Tính thành tiền tự động
+        function updateTotal() {
+            var qty = parseFloat($("#Quantity").val()) || 0;
+            var price = parseFloat($("#UnitPrice").val()) || 0;
+            $("#TotalValue").val((qty * price).toLocaleString('vi-VN'));
+        }
+
+        // Gọi khi load trang để hiển thị giá trị ban đầu
+        $(document).ready(function () {
+            updateTotal();
+        });
+
+        // Cập nhật khi thay đổi số lượng hoặc đơn giá
+        $("#Quantity, #UnitPrice").on("input", updateTotal);
+    </script>
+}

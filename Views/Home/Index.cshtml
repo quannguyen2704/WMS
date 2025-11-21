@@ -1,0 +1,344 @@
+﻿@{
+    ViewData["Title"] = "Hệ thống Quản lý Kho hàng Toàn diện";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ----- General Style ----- */
+    body {
+        background-color: #ffffff;
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #34495e;
+    }
+
+    /* ----- Hero Section (với nền là ảnh logistics mờ sang trọng) ----- */
+    .hero-section {
+        position: relative;
+        background: url('https://plus.unsplash.com/premium_photo-1661879449050-069f67e200bd?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1644 ') center/cover no-repeat;
+        color: white;
+        padding: 7rem 0;
+        text-align: center;
+        overflow: hidden;
+    }
+
+        /* Lớp phủ mờ giúp chữ nổi bật */
+        .hero-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 32, 96, 0.55); /* xanh đậm trong suốt */
+            backdrop-filter: blur(3px);
+            z-index: 1;
+        }
+
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-section h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-section p.lead {
+            font-size: 1.25rem;
+            max-width: 850px;
+            margin: 1.5rem auto 2.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .hero-section .btn {
+            padding: 0.8rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .hero-section .btn-light {
+            color: #1e40af;
+        }
+
+        .hero-section .btn-outline-light {
+            border: 2px solid white;
+        }
+
+            .hero-section .btn-outline-light:hover,
+            .hero-section .btn-light:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            }
+
+    /* ----- Feature Icon Section ----- */
+    .benefits-section {
+        padding: 5rem 0;
+    }
+    .benefit-item {
+        text-align: center;
+    }
+    .benefit-icon {
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 1.5rem;
+        border-radius: 50%;
+        background-color: #eef2ff;
+        color: #3b82f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        transition: all 0.3s ease;
+    }
+    .benefit-item:hover .benefit-icon {
+        transform: scale(1.1) rotate(15deg);
+        background-color: #3b82f6;
+        color: #fff;
+    }
+    .benefit-item h5 {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    /* ----- Detailed Features Section ----- */
+    .detailed-features-section {
+        padding: 5rem 0;
+        background-color: #f8fafc;
+    }
+    .feature-text h3 {
+        font-weight: 700;
+        color: #1e40af;
+    }
+    .feature-text .feature-point {
+        display: flex;
+        align-items: flex-start;
+        margin-top: 1.5rem;
+    }
+    .feature-point i {
+        font-size: 1.2rem;
+        color: #22c55e;
+        margin-right: 1rem;
+        margin-top: 5px;
+    }
+    .feature-image {
+        border-radius: 1rem;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+
+    /* ----- Who We Serve Section ----- */
+    .who-we-serve-section {
+        padding: 5rem 0;
+    }
+    .user-role-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 2rem;
+        transition: all 0.3s ease;
+        background-color: #fff;
+    }
+    .user-role-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        border-color: #3b82f6;
+    }
+    .user-role-card i {
+        font-size: 2.5rem;
+        color: #3b82f6;
+        margin-bottom: 1rem;
+    }
+    .user-role-card h4 {
+        font-weight: 600;
+    }
+
+    /* ----- Call to Action Section ----- */
+    .cta-section {
+        background-color: #1e3a8a;
+        color: #fff;
+        padding: 5rem 0;
+        text-align: center;
+    }
+    .cta-section h2 {
+        font-weight: 700;
+    }
+
+    /* ----- Section Title Helper ----- */
+    .section-title {
+        text-align: center;
+        margin-bottom: 4rem;
+    }
+    .section-title h2 {
+        font-weight: 700;
+        font-size: 2.5rem;
+        color: #1e3a8a;
+    }
+    .section-title p {
+        max-width: 600px;
+        margin: 0.5rem auto 0;
+        color: #64748b;
+    }
+</style>
+
+<div class="hero-section">
+    <div class="container">
+        <h1>Nền Tảng Quản Lý Kho Vận & Chuỗi Cung Ứng Thông Minh</h1>
+        <p class="lead">
+            Tối ưu hóa mọi quy trình, kết nối liền mạch từ nhà cung cấp đến khách hàng cuối.
+            Tăng hiệu suất, giảm chi phí và nâng cao sự hài lòng với giải pháp WMS toàn diện của chúng tôi.
+        </p>
+        <a href="#features" class="btn btn-light">Khám phá Tính năng</a>
+        <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-outline-light ms-2">
+            Truy cập Hệ thống
+        </a>
+    </div>
+</div>
+
+<div class="container">
+    <section class="benefits-section">
+        <div class="section-title">
+            <h2>Tại Sao Chọn Hệ Thống Của Chúng Tôi?</h2>
+            <p>Chúng tôi không chỉ cung cấp phần mềm, mà còn mang đến một giải pháp chiến lược cho doanh nghiệp của bạn.</p>
+        </div>
+        <div class="row g-5">
+            <div class="col-md-4">
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-arrows-spin"></i></div>
+                    <h5>Tối ưu hóa Vận hành</h5>
+                    <p class="text-muted">Tự động hóa các quy trình thủ công, giảm thiểu sai sót và tăng tốc độ xử lý đơn hàng lên đến 50%.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-link"></i></div>
+                    <h5>Kết nối Toàn diện</h5>
+                    <p class="text-muted">Nền tảng hợp nhất cho Quản lý, Nhân viên, Nhà cung cấp và Khách hàng, phá vỡ mọi rào cản thông tin.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="benefit-item">
+                    <div class="benefit-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <h5>Ra Quyết định Thông minh</h5>
+                    <p class="text-muted">Báo cáo trực quan, phân tích dữ liệu thời gian thực giúp bạn đưa ra các quyết định kinh doanh chính xác.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<section id="features" class="detailed-features-section">
+    <div class="container">
+        <div class="row align-items-center g-5 mb-5">
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?q=80&w=2070&auto=format&fit=crop" class="img-fluid feature-image" alt="Warehouse Management">
+            </div>
+            <div class="col-lg-6">
+                <div class="feature-text">
+                    <h3>Quản Lý Kho Vận Chuyên Sâu</h3>
+                    <p>Kiểm soát từng khía cạnh của kho hàng với độ chính xác tuyệt đối.</p>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Quản lý Tồn kho Đa kênh:</strong> Đồng bộ hóa số lượng tồn kho trên tất cả các kênh bán hàng, từ online đến offline.</div>
+                    </div>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Nhập/Xuất Kho Thông minh:</strong> Hỗ trợ quét mã vạch, gợi ý vị trí lưu trữ tối ưu (slotting) và quy trình soạn hàng hiệu quả.</div>
+                    </div>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Kiểm kê Dễ dàng:</strong> Thực hiện kiểm kê định kỳ hoặc đột xuất mà không làm gián đoạn hoạt động kinh doanh.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row align-items-center g-5 flex-lg-row-reverse">
+            <div class="col-lg-6">
+                <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2070&auto=format&fit=crop" class="img-fluid feature-image" alt="Partner Collaboration">
+            </div>
+            <div class="col-lg-6">
+                <div class="feature-text">
+                    <h3>Cổng Thông Tin Tương Tác</h3>
+                    <p>Mang lại trải nghiệm minh bạch và tiện lợi cho tất cả các đối tác.</p>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Cổng Nhà Cung Cấp:</strong> Tiếp nhận đơn hàng, cập nhật trạng thái giao hàng và theo dõi công nợ một cách chủ động.</div>
+                    </div>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Cổng Khách Hàng:</strong> Tự theo dõi hành trình đơn hàng, xem lại lịch sử mua và quản lý thông tin cá nhân.</div>
+                    </div>
+                    <div class="feature-point">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <div><strong>Phân quyền Linh hoạt:</strong> Cấp quyền truy cập chi tiết cho từng vai trò, đảm bảo an toàn và bảo mật thông tin.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="who-we-serve-section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Được Thiết Kế Cho Mọi Vai Trò</h2>
+            <p>Mỗi vai trò đều có một giao diện và bộ công cụ được tối ưu hóa riêng, giúp tăng hiệu suất làm việc tối đa.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="user-role-card">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <h4>Nhà Quản Lý</h4>
+                    <p class="text-muted">Báo cáo tổng quan, phân tích dòng tiền, hoạch định chiến lược và giám sát KPI.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="user-role-card">
+                    <i class="fa-solid fa-helmet-safety"></i>
+                    <h4>Nhân Viên Kho</h4>
+                    <p class="text-muted">Quy trình tác nghiệp rõ ràng, tối ưu hóa di chuyển và công cụ di động tiện lợi.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="user-role-card">
+                    <i class="fa-solid fa-handshake"></i>
+                    <h4>Nhà Cung Cấp</h4>
+                    <p class="text-muted">Minh bạch thông tin đơn hàng, đơn giản hóa quy trình và tăng cường hợp tác.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="user-role-card">
+                    <i class="fa-solid fa-user"></i>
+                    <h4>Khách Hàng</h4>
+                    <p class="text-muted">Trải nghiệm mua sắm tin cậy với khả năng theo dõi đơn hàng thời gian thực.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section"
+         style="position: relative;
+                background: url('https://images.unsplash.com/photo-1494412519320-aa613dfb7738?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1740') center/cover no-repeat;
+                color: #fff;
+                padding: 6rem 0;
+                text-align: center;
+                overflow: hidden;">
+
+    <!-- Lớp phủ mờ xanh đậm -->
+    <div style="position: absolute; inset: 0; background: rgba(0, 32, 96, 0.6); backdrop-filter: blur(3px); z-index: 1;"></div>
+
+    <div class="container" style="position: relative; z-index: 2;">
+        <h2 class="mb-4" style="font-weight: 700; text-shadow: 0 3px 8px rgba(0,0,0,0.4);">
+            Sẵn sàng Chuyển đổi Doanh nghiệp của bạn?
+        </h2>
+        <p class="lead mb-4" style="max-width: 800px; margin: 0 auto 2rem; color: rgba(255,255,255,0.9); text-shadow: 0 2px 5px rgba(0,0,0,0.4);">
+            Tham gia cùng hàng trăm doanh nghiệp đã tin tưởng và thành công với giải pháp của chúng tôi.
+        </p>
+        <a asp-area="" asp-controller="Account" asp-action="Login"
+           class="btn btn-light btn-lg"
+           style="border-radius: 50px; font-weight: 600; padding: 0.8rem 2.5rem; transition: all 0.3s ease;">
+            Bắt đầu Ngay hôm nay
+        </a>
+    </div>
+</section>

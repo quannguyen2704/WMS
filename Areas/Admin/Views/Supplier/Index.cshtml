@@ -1,0 +1,157 @@
+﻿@model List<WMS.Models.SupplierModel>
+@* Giả sử namespace của bạn là WMS.Models, hãy thay đổi nếu cần *@
+
+@{
+    ViewData["Title"] = "Quản lý Nhà cung cấp";
+}
+
+<style>
+    /* Một chút CSS tùy chỉnh để bảng trông đẹp hơn */
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .table-hover > tbody > tr:hover > * {
+        background-color: #f8f9fa;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1"><i class="fa-solid fa-truck-field me-2"></i> Quản lý Nhà cung cấp</h1>
+        <p class="text-muted mb-0">Xem, tạo mới, chỉnh sửa và xóa thông tin các đối tác.</p>
+    </div>
+    <div>
+        <a class="btn btn-primary" asp-controller="Supplier" asp-action="Create">
+            <i class="fa-solid fa-plus me-2"></i>Tạo Nhà cung cấp
+        </a>
+    </div>
+</div>
+
+@* Hiển thị thông báo TempData tại đây *@
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light border-0 p-3">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0"><i class="fa-solid fa-list me-2"></i>Danh sách Nhà cung cấp</h5>
+            </div>
+            @* Thêm Thanh Tìm kiếm *@
+            <div class="col-md-6">
+                <form asp-action="Index" method="get">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control"
+                               placeholder="🔍 Tìm kiếm theo tên, địa chỉ, email..."
+                               value="@ViewBag.SearchKeyword" />
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        @if (!string.IsNullOrEmpty(ViewBag.SearchKeyword))
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary" title="Xóa tìm kiếm">
+                                <i class="fa-solid fa-times"></i>
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Tên Nhà Cung Cấp</th>
+                            <th>Địa chỉ</th>
+                            <th>Điện thoại</th>
+                            <th>Email</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            <tr>
+                                <td class="fw-bold">@s.Name</td>
+                                <td>@s.Address</td>
+                                <td>@s.Phone</td>
+                                <td>@s.Email</td>
+                                <td class="text-end">
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-warning">
+                                            <i class="fa-solid fa-pencil me-1"></i> Sửa
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline"
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhà cung cấp này không?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fa-solid fa-trash-can me-1"></i> Xoá
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center p-5">
+                <i class="fa-solid fa-box-open fa-3x text-muted mb-3"></i>
+                <h5 class="fw-bold">
+                    @if (!string.IsNullOrEmpty(ViewBag.SearchKeyword))
+                    {
+                        <span>Không tìm thấy nhà cung cấp nào khớp với "@ViewBag.SearchKeyword"</span>
+                    }
+                    else
+                    {
+                        <span>Chưa có nhà cung cấp nào</span>
+                    }
+                </h5>
+                @if (string.IsNullOrEmpty(ViewBag.SearchKeyword))
+                {
+                    <p class="text-muted">Hãy bắt đầu bằng cách thêm nhà cung cấp đầu tiên của bạn.</p>
+                    <a class="btn btn-primary mt-3" asp-controller="Supplier" asp-action="Create">
+                        <i class="fa-solid fa-plus me-2"></i>Tạo Nhà cung cấp mới
+                    </a>
+                }
+                else
+                {
+                    <p class="text-muted">Vui lòng thử lại với từ khóa khác.</p>
+                }
+            </div>
+        }
+    </div>
+</div>

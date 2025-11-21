@@ -1,0 +1,260 @@
+﻿@model IEnumerable<WMS.Models.OrderModel>
+@using WMS.Models
+
+@{
+    ViewData["Title"] = "Danh sách đơn hàng";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fa-solid fa-receipt me-2"></i> Quản lý đơn hàng
+        </h2>
+        <a asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="fa-solid fa-circle-plus me-1"></i> Tạo đơn hàng
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form method="get" asp-action="Index" class="row g-3 align-items-end mb-4 shadow-sm p-3 border rounded bg-light">
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-primary">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm
+            </label>
+            <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control"
+                   placeholder="Nhập mã đơn, tên khách hàng hoặc sản phẩm..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-day"></i> Từ ngày</label>
+            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-check"></i> Đến ngày</label>
+            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-50"><i class="fa-solid fa-filter"></i> Lọc</button>
+            <a asp-action="Index" class="btn btn-outline-secondary w-50"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+        </div>
+    </form>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="orderTable" class="table table-hover align-middle text-center mb-0">
+                    <thead class="table-primary">
+                        <tr>
+                            <th><i class="fa-solid fa-barcode me-1"></i> Mã đơn</th>
+                            <th><i class="fa-solid fa-image me-1"></i> Ảnh</th>
+                            <th><i class="fa-solid fa-box me-1"></i> Sản phẩm</th>
+                            <th><i class="fa-solid fa-layer-group me-1"></i> SL</th>
+                            <th><i class="fa-solid fa-ruler me-1"></i> Đơn vị</th>
+                            <th><i class="fa-solid fa-money-bill me-1"></i> Đơn giá</th>
+                            <th><i class="fa-solid fa-coins me-1"></i> Thành tiền (VNĐ)</th>
+                            <th><i class="fa-solid fa-user me-1"></i> Khách hàng</th>
+                            <th><i class="fa-solid fa-calendar-day me-1"></i> Ngày đặt</th>
+                            <th><i class="fa-solid fa-calendar-check me-1"></i> Ngày giao</th>
+                            <th><i class="fa-solid fa-wallet me-1"></i> TT</th>
+                            <th><i class="fa-solid fa-user-check me-1"></i> KH</th>
+                            <th><i class="fa-solid fa-warehouse me-1"></i> Kho</th>
+                            <th><i class="fa-solid fa-gears me-1"></i> Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var o in Model)
+                            {
+                                <tr class="fade-in">
+                                    <td class="fw-semibold text-primary">@o.OrderNumber</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(o.Product?.ProductImage))
+                                        {
+                                            <img src="@o.Product.ProductImage" alt="Ảnh sản phẩm" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="fa-solid fa-image-slash text-muted" title="Không có ảnh"></i>
+                                        }
+                                    </td>
+                                    <td>@o.Product?.ProductName</td>
+                                    <td>@o.Quantity</td>
+                                    <td>@o.Unit</td>
+                                    <td>@o.UnitPrice.ToString("N0")</td>
+                                    <td class="fw-bold text-success">@o.TotalValue.ToString("N0")</td>
+                                    <td>@(string.IsNullOrWhiteSpace(o.CustomerName) ? (o.Customer?.Name ?? "-") : o.CustomerName)</td>
+                                    <td>@o.OrderDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@(o.DeliveryDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+
+                                    <td>
+                                        @if (o.PaymentMethod == PaymentMethod.COD)
+                                        {
+                                            <span class="badge bg-secondary"><i class="fa-solid fa-money-bill-transfer me-1"></i> COD</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark"><i class="fa-solid fa-building-columns me-1"></i> CK</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @switch (o.Status)
+                                        {
+                                            case WMS.Models.OrderStatus.CREATED:
+                                                <span class="badge bg-secondary"><i class="fa-regular fa-clock me-1"></i> Chờ xác nhận</span>
+                                                ; break;
+                                            case WMS.Models.OrderStatus.DELIVERED_SUCCESS:
+                                                <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Thành công</span>
+                                                ; break;
+                                            case WMS.Models.OrderStatus.DELIVERED_FAILED:
+                                                <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Thất bại</span>
+                                                ; break;
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @switch (o.WarehouseStatus)
+                                        {
+                                            case WMS.Models.WarehouseOrderStatus.PENDING:
+                                                <span class="badge bg-secondary"><i class="fa-solid fa-hourglass-half me-1"></i> Đơn mới</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.PROCESSING:
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Đang xử lý</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.WAIT_CONFIRM:
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Chờ xác nhận</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.PACKING:
+                                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-spinner fa-spin me-1"></i> Đang đóng gói</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.DELIVERED:
+                                                <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Xuất kho hoàn tất</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.DELIVERING:
+                                                <span class="badge bg-info text-dark"><i class="fa-solid fa-truck-fast me-1"></i> Đang giao</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.COMPLETED:
+                                                <span class="badge bg-success"><i class="fa-solid fa-circle-check me-1"></i> Hoàn tất</span>
+                                                ; break;
+                                            case WMS.Models.WarehouseOrderStatus.FAILED:
+                                                <span class="badge bg-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Giao thất bại</span>
+                                                ; break;
+                                        }
+                                    </td>
+
+                                    <td>
+                                        <div class="btn-group">
+                                            <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-outline-warning" title="Chỉnh sửa">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            <form asp-action="Delete" asp-route-id="@o.Id" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Xác nhận xoá đơn hàng này?');">
+                                                @Html.AntiForgeryToken()
+                                                <button class="btn btn-sm btn-outline-danger ms-1" title="Xóa">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="14" class="text-center text-muted py-3">
+                                    <i class="fa-solid fa-circle-info me-1"></i> Không có đơn hàng nào.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="6" class="text-end">Tổng tiền trang:</td>
+                            <td class="text-success">
+                                @((Model?.Any() ?? false) ? Model.Sum(o => o.TotalValue).ToString("N0") : "0")
+                            </td>
+                            <td colspan="7"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .fade-in {
+            animation: fadeInRow 0.8s ease-in-out;
+        }
+
+        @@keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        table tbody tr:hover {
+            background-color: #eef6ff;
+            transition: 0.2s;
+        }
+
+        form.bg-light {
+            background-color: #f8faff !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+    <script>
+        $(document).ready(function () {
+            // 🚫 Ẩn cảnh báo popup DataTables
+            $.fn.dataTable.ext.errMode = 'none';
+
+            // ✅ Khởi tạo DataTable
+            $('#orderTable').DataTable({
+                language: {
+                    search: "🔍 Tìm kiếm:",
+                    lengthMenu: "Hiển thị _MENU_ dòng",
+                    info: "Hiển thị _START_ đến _END_ của _TOTAL_ đơn hàng",
+                    paginate: { previous: "← Trước", next: "Sau →" }
+                },
+                pageLength: 10,
+                ordering: true,
+                dom:
+                    "<'row mb-3'<'col-sm-6'l><'col-sm-6 text-end'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row mt-3'<'col-sm-5'i><'col-sm-7'p>>"
+            });
+        });
+    </script>
+}

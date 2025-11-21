@@ -1,0 +1,136 @@
+﻿@model List<UserWithRolesViewModel>
+
+@{
+    ViewData["Title"] = "Quản lý Phân quyền";
+}
+
+<style>
+    .table th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1"><i class="fa-solid fa-users-cog me-2"></i>Quản lý Phân Quyền</h1>
+        <p class="text-muted mb-0">Gán hoặc thay đổi vai trò cho các tài khoản người dùng trong hệ thống.</p>
+    </div>
+    <a class="btn btn-primary" asp-controller="User" asp-action="Create">
+        <i class="fa-solid fa-user-plus me-2"></i>Thêm Người dùng
+    </a>
+</div>
+
+<!-- ⭐ HIỂN THỊ THÔNG BÁO THÀNH CÔNG / LỖI -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light border-0 p-3">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-0 pt-1"><i class="fa-solid fa-list me-2"></i>Danh sách Tài khoản & Quyền</h5>
+            </div>
+            <div class="col-md-6">
+                <form asp-action="Index" method="get">
+                    <div class="input-group">
+                        <input type="text"
+                               name="search"
+                               class="form-control"
+                               placeholder="🔍 Tìm kiếm theo tên hoặc email..."
+                               value="@ViewBag.SearchKeyword" />
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3" style="width: 30%;">Người Dùng</th>
+                        <th style="width: 50%;">Vai Trò Hiện Tại</th>
+                        <th class="text-center" style="width: 20%;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-3">
+                                    <div class="fw-bold">@item.User.FullName</div>
+                                    <div class="small text-muted">@item.User.Email</div>
+                                </td>
+
+                                <td>
+                                    @if (item.Roles.Any())
+                                    {
+                                        foreach (var role in item.Roles)
+                                        {
+                                            <span class="badge bg-primary me-1">@role</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark">Chưa có vai trò</span>
+                                    }
+                                </td>
+
+                                <td class="text-center">
+                                    <a asp-action="Manage"
+                                       asp-route-userId="@item.User.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fa-solid fa-shield-halved me-1"></i>Gán vai trò
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3">
+                                <div class="text-center p-5">
+                                    <i class="fa-solid fa-folder-open fa-3x text-muted mb-3"></i>
+                                    <h5 class="fw-bold">Không tìm thấy người dùng nào</h5>
+                                    <p class="text-muted">Hệ thống chưa có tài khoản nào để thực hiện phân quyền.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

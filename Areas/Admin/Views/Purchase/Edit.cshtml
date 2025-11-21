@@ -1,0 +1,243 @@
+﻿@model WMS.Models.PurchaseOrderModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Chỉnh sửa đơn mua nguyên liệu";
+}
+
+<style>
+    .input-group-text {
+        width: 42px;
+        justify-content: center;
+    }
+
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+
+    .summary-card {
+        background: #fff7e6;
+        border-left: 5px solid #ffc107;
+        padding: 16px 20px;
+        border-radius: 10px;
+        margin-top: 16px;
+    }
+
+    .fw-semibold {
+        font-weight: 600;
+    }
+
+    .inventory-info {
+        font-size: 0.9rem;
+        margin-top: 6px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold mb-1">
+            <i class="fa-solid fa-pen-to-square me-2"></i>Chỉnh Sửa Đơn Mua
+        </h1>
+        <p class="text-muted mb-0">
+            Cập nhật thông tin chi tiết và trạng thái cho đơn mua
+            <span class="fw-bold text-primary">@Model.PurchaseNumber</span>.
+        </p>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="card-header bg-light border-0 pt-3">
+            <h5 class="mb-0"><i class="fa-solid fa-file-invoice me-2"></i>Thông tin đơn mua</h5>
+        </div>
+
+        <div class="card-body p-4">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+
+            <div class="row g-4">
+                <!-- CỘT TRÁI -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="PurchaseNumber" class="form-label fw-bold">Mã đơn mua</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
+                            <input asp-for="PurchaseNumber" class="form-control bg-light" readonly />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="SupplierId" class="form-label fw-bold">Nhà cung cấp</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-truck"></i></span>
+                            <select asp-for="SupplierId" class="form-select"
+                                    asp-items="@(new SelectList(ViewBag.Suppliers, "Id", "Name", Model.SupplierId))">
+                                <option value="">-- Chọn nhà cung cấp --</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="SupplierId" class="text-danger small mt-1 d-block"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ProductId" class="form-label fw-bold">Nguyên liệu cần mua</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-box"></i></span>
+                            <select asp-for="ProductId" id="productSelect" class="form-select"
+                                    asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductName", Model.ProductId))">
+                                <option value="">-- Chọn nguyên liệu --</option>
+                            </select>
+                        </div>
+                        <span asp-validation-for="ProductId" class="text-danger small mt-1 d-block"></span>
+
+                        <!-- 🧮 Thông tin tồn kho -->
+                        <div id="inventoryInfo" class="inventory-info text-muted">
+                            <i class="fa-solid fa-warehouse me-1"></i> Đang tải tồn kho...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CỘT PHẢI -->
+                <div class="col-md-6">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label asp-for="Quantity" class="form-label fw-bold">Số lượng</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-cubes"></i></span>
+                                <input asp-for="Quantity" type="number" step="0.01" min="0" class="form-control" id="quantityInput" />
+                            </div>
+                            <span asp-validation-for="Quantity" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label asp-for="Unit" class="form-label fw-bold">Đơn vị</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-ruler-combined"></i></span>
+                                <input asp-for="Unit" id="unitInput" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Unit" class="text-danger small mt-1 d-block"></span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-sm-6">
+                            <label asp-for="UnitPrice" class="form-label fw-bold">Đơn giá (VNĐ)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-money-bill-wave"></i></span>
+                                <input asp-for="UnitPrice" type="number" step="0.01" min="0" class="form-control" id="priceInput" />
+                            </div>
+                            <span asp-validation-for="UnitPrice" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label fw-bold">Thành tiền (VNĐ)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-coins"></i></span>
+                                <input type="text" id="totalValue" class="form-control bg-light fw-semibold text-primary" readonly />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="Status" class="form-label fw-bold">Trạng thái đơn mua</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-check-circle"></i></span>
+                            <select asp-for="Status" class="form-select">
+                                <option value="0">Khởi tạo</option>
+                                <option value="1">Đã đặt</option>
+                                <option value="2">Đã nhận</option>
+                                <option value="3">Đã hủy</option>
+                            </select>
+                        </div>
+                        <small class="text-muted mt-1 d-block">
+                            🔹 Nếu chọn <b>Đã nhận</b>, hệ thống sẽ tự động cộng nguyên liệu vào kho và ghi ngày nhận hàng.
+                        </small>
+                    </div>
+
+                    <div class="mt-3">
+                        <label asp-for="Description" class="form-label fw-bold">Mô tả / Ghi chú</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Thêm ghi chú nếu có..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 💰 Tổng giá trị đơn mua -->
+            <div class="summary-card text-center shadow-sm">
+                <h6 class="fw-semibold text-secondary mb-1">💰 Tổng giá trị đơn mua</h6>
+                <h3 id="summaryTotal" class="fw-bold text-warning mb-0">0 VNĐ</h3>
+            </div>
+        </div>
+
+        <div class="card-footer bg-light border-0 text-end py-3">
+            <a asp-action="Index" class="btn btn-secondary me-2">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // 🧮 Tính toán realtime Thành tiền và Tổng
+        const qty = document.getElementById("quantityInput");
+        const price = document.getElementById("priceInput");
+        const total = document.getElementById("totalValue");
+        const summary = document.getElementById("summaryTotal");
+
+        function updateTotal() {
+            const q = parseFloat(qty.value) || 0;
+            const p = parseFloat(price.value) || 0;
+            const result = q * p;
+            const formatted = result.toLocaleString('vi-VN');
+            total.value = formatted;
+            summary.textContent = `${formatted} VNĐ`;
+        }
+
+        qty.addEventListener("input", updateTotal);
+        price.addEventListener("input", updateTotal);
+        updateTotal();
+
+        // 🔍 Hiển thị tồn kho & tự động điền đơn vị khi chọn nguyên liệu
+        $('#productSelect').change(function () {
+            const productId = $(this).val();
+            const infoDiv = $('#inventoryInfo');
+            const unitInput = $('#unitInput');
+
+            if (!productId) {
+                infoDiv.html('<i class="fa-solid fa-warehouse me-1"></i> Chưa chọn nguyên liệu');
+                unitInput.val('');
+                return;
+            }
+
+            infoDiv.html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tải tồn kho...');
+
+            $.get(`/Admin/Purchase/GetInventory?id=${productId}`, function (res) {
+                if (res.success) {
+                    infoDiv.html(`
+                        <i class="fa-solid fa-warehouse text-success me-1"></i>
+                        <strong>Tồn kho hiện tại:</strong> ${res.stock.toLocaleString('vi-VN')} ${res.unit}
+                    `);
+                    unitInput.val(res.unit);
+                } else {
+                    infoDiv.html(`<i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> ${res.message}`);
+                    unitInput.val('');
+                }
+            }).fail(function () {
+                infoDiv.html('<i class="fa-solid fa-triangle-exclamation text-danger me-1"></i> Lỗi khi tải tồn kho.');
+                unitInput.val('');
+            });
+        });
+
+        // 🚀 Tự load tồn kho khi trang vừa mở
+        $(document).ready(function () {
+            const productId = $('#productSelect').val();
+            if (productId) $('#productSelect').trigger('change');
+        });
+    </script>
+}

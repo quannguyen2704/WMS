@@ -1,0 +1,59 @@
+﻿/* ==========================
+   Warehouse Dashboard Style
+   ========================== */
+
+.table-dashboard {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background-color: #fff;
+}
+
+    .table-dashboard thead {
+        background: linear-gradient(90deg, #0d6efd, #198754);
+        color: white;
+        text-transform: uppercase;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+    }
+
+    .table-dashboard tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .table-dashboard td,
+    .table-dashboard th {
+        vertical-align: middle;
+    }
+
+    .table-dashboard .table-success td {
+        background-color: rgba(25, 135, 84, 0.15) !important;
+    }
+
+    .table-dashboard .table-danger td {
+        background-color: rgba(220, 53, 69, 0.15) !important;
+    }
+
+/* 🎨 Card & Button */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+    .btn i {
+        margin-right: 6px;
+    }
+
+/* 📱 Responsive fix */
+@media (max-width: 768px) {
+    .table-dashboard {
+        font-size: 13px;
+    }
+}

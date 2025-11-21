@@ -1,0 +1,182 @@
+﻿@model X.PagedList.IPagedList<WMS.Models.ProductModel>
+@using X.PagedList.Mvc.Core
+@{
+    ViewData["Title"] = "Danh sách sản phẩm";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fa-solid fa-boxes-stacked me-2"></i> Danh sách sản phẩm
+        </h2>
+        <span class="text-muted">
+            <i class="fa-solid fa-layer-group me-1"></i> Tổng cộng:
+            <b class="text-dark">@ViewBag.TotalCount</b> sản phẩm
+        </span>
+    </div>
+
+    <form asp-action="Index" method="get" class="row g-2 mb-4 align-items-center">
+        <div class="col-md-6">
+            <input type="text" name="search" value="@ViewBag.Search"
+                   class="form-control shadow-sm" placeholder="🔍 Tìm theo mã, tên, hoặc vị trí..." />
+        </div>
+
+        <div class="col-md-3">
+            <select name="typeFilter" class="form-select shadow-sm">
+                <option value="">-- Tất cả loại sản phẩm --</option>
+                <option value="FinishedProduct" selected="@(ViewBag.TypeFilter == "FinishedProduct")">Thành phẩm</option>
+                <option value="Material" selected="@(ViewBag.TypeFilter == "Material")">Nguyên liệu</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary shadow-sm flex-fill">
+                <i class="fa fa-search"></i> Tìm kiếm
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary shadow-sm flex-fill">
+                <i class="fa fa-rotate-left"></i> Làm mới
+            </a>
+        </div>
+    </form>
+
+    <div class="text-end mb-3">
+        <a asp-controller="Product" asp-action="Create" class="btn btn-success shadow-sm">
+            <i class="fa fa-plus-circle me-1"></i> Thêm sản phẩm
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-lg rounded-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle text-center mb-0">
+                    <thead class="table-gradient text-white">
+                        <tr>
+                            <th>STT</th>
+                            <th style="width: 80px;"><i class="fa-solid fa-image"></i> Ảnh</th>
+                            <th><i class="fa-solid fa-barcode"></i> Mã</th>
+                            <th><i class="fa-solid fa-box"></i> Tên sản phẩm</th>
+                            <th><i class="fa-solid fa-ruler-combined"></i> Đơn vị</th>
+                            <th><i class="fa-solid fa-layer-group"></i> Số lượng</th>
+                            <th><i class="fa-solid fa-dollar-sign"></i> Đơn giá (VNĐ / ĐV)</th>
+                            <th><i class="fa-solid fa-location-dot"></i> Vị trí</th>
+                            <th><i class="fa-solid fa-list"></i> Loại</th>
+                            <th><i class="fa-solid fa-sticky-note"></i> Mô tả</th>
+                            <th><i class="fa-solid fa-calendar-plus"></i> Tạo</th>
+                            <th><i class="fa-solid fa-calendar-check"></i> Cập nhật</th>
+                            <th><i class="fa-solid fa-gear"></i> Quản lý</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            // Tính STT cho trang hiện tại
+                            int stt = (Model.PageNumber - 1) * Model.PageSize + 1;
+                            foreach (var item in Model)
+                            {
+                                <tr class="fade-in">
+                                    <td>@stt</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(item.ProductImage))
+                                        {
+                                            <img src="@item.ProductImage" alt="Ảnh sản phẩm" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="fa-solid fa-image-slash text-muted" title="Không có ảnh"></i>
+                                        }
+                                    </td>
+                                    <td class="fw-semibold">@item.ProductCode</td>
+                                    <td class="text-start ps-3">@item.ProductName</td>
+                                    <td>@item.ProductUnit</td>
+                                    <td>@item.ProductQuantity</td>
+                                    <td class="text-success fw-semibold">@String.Format("{0:N0}", item.ProductPrice)</td>
+                                    <td>@item.Location</td>
+                                    <td>
+                                        @if (item.ProductType == WMS.Models.ProductType.FinishedProduct)
+                                        {
+                                            <span class="badge bg-success">Thành phẩm</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info text-dark">Nguyên liệu</span>
+                                        }
+                                    </td>
+                                    <td class="text-muted small">@item.ProductDescription</td>
+                                    <td>@item.CreateDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.UpdateDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning shadow-sm" title="Chỉnh sửa">
+                                                <i class="fa fa-pen"></i>
+                                            </a>
+                                            <form asp-action="Delete" asp-route-id="@item.Id"
+                                                  method="post" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Xóa">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                stt++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="13" class="text-center text-danger py-3">
+                                    <i class="fa fa-circle-info"></i> Không có sản phẩm nào phù hợp.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center mt-4 fade-in">
+        @Html.PagedListPager(Model, page => Url.Action("Index", new { page, search = ViewBag.Search, typeFilter = ViewBag.TypeFilter }),
+        new PagedListRenderOptions
+        {
+            LiElementClasses = new[] { "page-item" },
+            PageClasses = new[] { "page-link" },
+            UlElementClasses = new[] { "pagination shadow-sm" },
+            DisplayLinkToPreviousPage = PagedListDisplayMode.Always,
+            DisplayLinkToNextPage = PagedListDisplayMode.Always,
+            DisplayLinkToFirstPage = PagedListDisplayMode.Always,
+            DisplayLinkToLastPage = PagedListDisplayMode.Always
+        })
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        /* 🌈 Header gradient */
+        .table-gradient {
+            background: linear-gradient(90deg, #007bff 0%, #00a2ff 100%);
+            color: white;
+        }
+
+        .fade-in {
+            animation: fadeInRow 0.8s ease-in-out;
+        }
+
+        @@keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            border-radius: 1rem;
+        }
+    </style>
+}

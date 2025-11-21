@@ -1,0 +1,302 @@
+﻿@model WMS.Models.OrderModel
+@using WMS.Models
+@using System.Reflection
+@using System.ComponentModel.DataAnnotations
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tạo đơn hàng mới";
+
+    bool isCustomer = User.IsInRole("Khách hàng");
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">
+                <i class="fa-solid fa-truck-fast me-2"></i>Tạo đơn hàng mới
+            </h2>
+            <p class="text-muted mb-0">Điền thông tin chi tiết để tạo đơn hàng xuất kho.</p>
+        </div>
+    </div>
+
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h5 class="fw-bold text-primary mb-0">
+                    <i class="fa-solid fa-file-invoice me-2"></i>Thông tin đơn hàng
+                </h5>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="row g-4">
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Mã đơn hàng</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-hashtag"></i></span>
+                            <input asp-for="OrderNumber" class="form-control" readonly />
+                        </div>
+                        <small class="text-muted">* Mã đơn hàng được tạo tự động.</small>
+                    </div>
+
+                    @if (!isCustomer)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Khách hàng</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                                <select asp-for="CustomerId" class="form-select"
+                                        asp-items="@(new SelectList(ViewBag.Customers, "Id", "Name"))">
+                                    <option value="">-- Chọn khách hàng --</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="CustomerId" class="text-danger small d-block mt-1"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Khách hàng</label>
+                            <input type="text" class="form-control" value="@Model.CustomerName" readonly />
+                            <input type="hidden" asp-for="CustomerId" />
+                        </div>
+                    }
+
+                    @if (isCustomer)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Email</label>
+                            <input asp-for="CustomerEmail" class="form-control" readonly />
+                            <small class="text-muted">Email được lấy từ tài khoản đăng nhập.</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Họ và tên</label>
+                            <input asp-for="CustomerName" class="form-control" placeholder="Nhập họ tên khách hàng" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Số điện thoại</label>
+                            <input asp-for="CustomerPhone" class="form-control" placeholder="Nhập số điện thoại liên hệ" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Địa chỉ giao hàng</label>
+                            <input asp-for="CustomerAddress" class="form-control" placeholder="Nhập địa chỉ giao hàng" />
+                        </div>
+                    }
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Thành phẩm</label>
+                        <select asp-for="ProductId" class="form-select"
+                                asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductName"))"
+                                id="productSelect">
+                            <option value="">-- Chọn thành phẩm --</option>
+                        </select>
+                        <span asp-validation-for="ProductId" class="text-danger small mt-1 d-block"></span>
+
+                        <div id="productImageContainer" class="mt-2 text-center" style="display: none; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px; background-color: white;">
+                            <img id="productImage" src="" alt="Hình ảnh sản phẩm" style="max-width: 100%; height: 100px; object-fit: contain; border-radius: 3px;" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Số lượng đặt</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-cubes"></i></span>
+                            <input asp-for="Quantity" class="form-control" id="quantityInput" type="number" min="1" />
+                        </div>
+                        <span asp-validation-for="Quantity" class="text-danger small mt-1 d-block"></span>
+                        <div id="quantityError" class="text-danger small mt-1" style="display:none;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Số lượng vượt quá tồn kho!
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Đơn vị</label>
+                        <input asp-for="Unit" class="form-control" id="unitInput" readonly />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Đơn giá (VNĐ)</label>
+                        <input asp-for="UnitPrice" id="unitPriceRaw" type="hidden" />
+                        <input type="text" id="unitPriceDisplay" class="form-control" readonly />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Thành tiền (VNĐ)</label>
+                        <input type="text" class="form-control fw-bold text-success" id="totalValueInput" readonly />
+                    </div>
+
+                    <!-- PAYMENT METHOD (COD ONLY) -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Phương thức thanh toán</label>
+                        <select asp-for="PaymentMethod" id="paymentMethodSelect" class="form-select">
+                            <option value="0">Thanh toán khi nhận hàng (COD)</option>
+                        </select>
+                    </div>
+
+                    <!-- MÔ TẢ -->
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Mô tả / Ghi chú</label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-12 text-muted small mt-2" id="stockInfo" style="display:none;">
+                        <i class="fa fa-boxes-stacked"></i> Tồn kho hiện tại:
+                        <strong id="stockValue" class="text-success"></strong>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="card-footer bg-light text-end">
+                <button type="submit" class="btn btn-primary shadow-sm px-4">
+                    <i class="fa-solid fa-save me-1"></i> Lưu đơn hàng
+                </button>
+                <a asp-action="Index" class="btn btn-secondary shadow-sm ms-2">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const productSelect = document.getElementById('productSelect');
+            const stockInfo = document.getElementById('stockInfo');
+            const stockValue = document.getElementById('stockValue');
+            const unitInput = document.getElementById('unitInput');
+            const priceRaw = document.getElementById('unitPriceRaw');
+            const priceDisplay = document.getElementById('unitPriceDisplay');
+            const totalValueInput = document.getElementById('totalValueInput');
+            const quantityInput = document.getElementById('quantityInput');
+            const quantityError = document.getElementById('quantityError');
+
+            const imageContainer = document.getElementById('productImageContainer');
+            const productImage = document.getElementById('productImage');
+            const submitBtn = document.querySelector('button[type="submit"]');
+
+            let currentStock = 0;
+
+            function formatCurrency(value) {
+                return (value || 0).toLocaleString('vi-VN');
+            }
+
+            function lockFormForNoProduct() {
+                stockInfo.style.display = 'none';
+                imageContainer.style.display = 'none';
+                unitInput.value = '';
+                priceRaw.value = 0;
+                priceDisplay.value = '';
+                quantityInput.value = '';
+                quantityInput.disabled = true;
+                submitBtn.disabled = true;
+                updateTotal();
+            }
+
+            function loadStock(productId) {
+                if (!productId) {
+                    lockFormForNoProduct();
+                    return;
+                }
+
+                fetch(`/Admin/Order/GetStockByProductId?id=${productId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        currentStock = data.stock || 0;
+                        unitInput.value = data.unit || '';
+
+                        const rawPrice = Number(data.price || 0);
+                        priceRaw.value = rawPrice;
+                        priceDisplay.value = formatCurrency(rawPrice);
+
+                        if (currentStock <= 0) {
+                            stockValue.textContent = `Hết hàng (${data.unit || ''})`;
+                            stockValue.classList.remove('text-success');
+                            stockValue.classList.add('text-danger');
+
+                            quantityInput.value = '';
+                            quantityInput.disabled = true;
+                            submitBtn.disabled = true;
+
+                            quantityError.style.display = 'block';
+                            quantityError.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Sản phẩm đã hết hàng, không thể đặt.`;
+                        } else {
+                            stockValue.textContent = `${formatCurrency(currentStock)} ${data.unit || ''}`;
+                            stockValue.classList.remove('text-danger');
+                            stockValue.classList.add('text-success');
+
+                            quantityInput.disabled = false;
+                            submitBtn.disabled = false;
+
+                            quantityError.style.display = 'none';
+                        }
+
+                        stockInfo.style.display = 'block';
+
+                        if (data.image) {
+                            productImage.src = data.image;
+                            imageContainer.style.display = 'block';
+                        } else {
+                            imageContainer.style.display = 'none';
+                        }
+
+                        validateQuantity();
+                    })
+                    .catch(err => {
+                        console.error('Lỗi khi lấy tồn kho:', err);
+                        lockFormForNoProduct();
+                    });
+            }
+
+            function updateTotal() {
+                const qty = parseFloat(quantityInput.value) || 0;
+                const price = parseFloat(priceRaw.value) || 0;
+                const total = qty * price;
+
+                totalValueInput.value = formatCurrency(total);
+            }
+
+            function validateQuantity() {
+                const qty = parseFloat(quantityInput.value);
+
+                if (currentStock <= 0) {
+                    quantityError.style.display = 'block';
+                    quantityInput.classList.add('is-invalid');
+                    submitBtn.disabled = true;
+                    updateTotal();
+                    return;
+                }
+
+                if (!isNaN(qty) && qty > currentStock) {
+                    quantityError.style.display = 'block';
+                    quantityInput.classList.add('is-invalid');
+                    submitBtn.disabled = true;
+                } else {
+                    quantityError.style.display = 'none';
+                    quantityInput.classList.remove('is-invalid');
+                    submitBtn.disabled = false;
+                }
+
+                updateTotal();
+            }
+
+            productSelect.addEventListener('change', () => loadStock(productSelect.value));
+            quantityInput.addEventListener('input', validateQuantity);
+
+            const initialProductId = productSelect.value;
+            if (initialProductId) loadStock(initialProductId);
+            else lockFormForNoProduct();
+
+            updateTotal();
+        });
+    </script>
+}

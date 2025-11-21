@@ -1,0 +1,470 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    var stats = ViewBag.Stats;
+    var materials = ViewBag.MaterialInventory as IEnumerable<dynamic>;
+    var totalValue = (decimal)(ViewBag.MaterialTotalValue ?? 0M);
+
+    var recentOrders = ViewBag.RecentOrders as IEnumerable<WMS.Models.OrderModel>;
+    var recentProductions = ViewBag.RecentProductions as IEnumerable<WMS.Models.ProductionOrderModel>;
+    var recentPurchases = ViewBag.RecentPurchases as IEnumerable<WMS.Models.PurchaseOrderModel>;
+
+    // 🔹 Dùng để nhận biết đang xem doanh thu theo ngày / tiêu hao theo ngày
+    var productRevenueDays = ViewBag.ProductRevenueDays as IEnumerable<string>;
+    var materialUsageDays = ViewBag.MaterialUsageDays as IEnumerable<string>;
+}
+
+<h2 class="fw-bold text-primary mb-4">
+    <i class="fa-solid fa-chart-line"></i> Dashboard Tổng Quan
+</h2>
+
+<!-- 🔍 BỘ LỌC -->
+<form method="get" asp-action="Index" class="row g-3 align-items-end mb-4 shadow-sm p-3 border rounded bg-light">
+    <div class="col-md-4">
+        <label class="form-label fw-bold text-primary">
+            <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm sản phẩm
+        </label>
+        <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control"
+               placeholder="Nhập tên sản phẩm..." />
+        @if (ViewBag.SearchMessage != null)
+        {
+            <small class="text-danger">@ViewBag.SearchMessage</small>
+        }
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label fw-bold text-primary">
+            <i class="fa-solid fa-calendar-day"></i> Từ ngày
+        </label>
+        <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label fw-bold text-primary">
+            <i class="fa-solid fa-calendar-check"></i> Đến ngày
+        </label>
+        <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-50">
+            <i class="fa-solid fa-filter"></i> Lọc
+        </button>
+        <a asp-action="Index" class="btn btn-outline-secondary w-50">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+        </a>
+    </div>
+</form>
+
+<!-- 🌟 THỐNG KÊ -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-primary shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-box fa-2x text-primary mb-2"></i>
+                <h5 class="card-title">@stats.TotalProducts</h5>
+                <p class="text-muted small">Sản phẩm</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-warning shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-industry fa-2x text-warning mb-2"></i>
+                <h5 class="card-title">@stats.TotalProduction</h5>
+                <p class="text-muted small">Lệnh sản xuất</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-success shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-cart-shopping fa-2x text-success mb-2"></i>
+                <h5 class="card-title">@stats.TotalOrders</h5>
+                <p class="text-muted small">Đơn hàng KH</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-info shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-truck-fast fa-2x text-info mb-2"></i>
+                <h5 class="card-title">@stats.TotalPurchaseOrders</h5>
+                <p class="text-muted small">Đơn mua NVL</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-secondary shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-users fa-2x text-secondary mb-2"></i>
+                <h5 class="card-title">@stats.TotalSuppliers</h5>
+                <p class="text-muted small">Nhà cung cấp</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-danger shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-dollar-sign fa-2x text-danger mb-2"></i>
+                <h5 class="card-title stat-value">@String.Format("{0:N0}", stats.TotalRevenue) ₫</h5>
+                <p class="text-muted small">Tổng doanh thu</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💎 CARD: TỔNG GIÁ TRỊ NVL -->
+    <div class="col-6 col-md-4 col-lg-2">
+        <div class="card text-center border-dark shadow-sm">
+            <div class="card-body">
+                <i class="fa-solid fa-gem fa-2x text-dark mb-2"></i>
+                <h5 class="card-title stat-value">@String.Format("{0:N0}", totalValue) ₫</h5>
+                <p class="text-muted small">Tổng giá trị NVL</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 📊 NHẬP / XUẤT + 💰 NVL -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="fa-solid fa-chart-column"></i> Nhập / Xuất Kho theo ngày
+            </div>
+            <div class="card-body">
+                <canvas id="importExportChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 💰 Tổng tiền NVL + Bảng chi tiết -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white fw-bold">
+                <i class="fa-solid fa-cubes-stacked"></i>
+                @if (materialUsageDays != null && materialUsageDays.Any())
+                {
+                    @:Tiêu hao nguyên vật liệu theo ngày - @ViewBag.SearchName
+                }
+                else
+                {
+                    @:Tổng tiền nguyên vật liệu trong kho
+                }
+            </div>
+            <div class="card-body">
+                <canvas id="materialBarChart" height="120"></canvas>
+                <hr />
+                <div class="table-responsive" style="max-height: 250px;">
+                    <table class="table table-sm table-bordered mt-3 mb-0 text-center">
+                        <thead class="table-light sticky-top">
+                            <tr><th>Tên NVL</th><th>SL tồn</th><th>Giá trị (₫)</th></tr>
+                        </thead>
+                        <tbody>
+                            @if (materials?.Any() == true)
+                            {
+                                @foreach (var m in materials)
+                                {
+                                    <tr>
+                                        <td>@m.ProductName</td>
+                                        <td>@m.Stock</td>
+                                        <td class="text-success fw-semibold">@String.Format("{0:N0}", m.TotalValue)</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-muted">Không có nguyên liệu có tồn kho > 0.</td>
+                                </tr>
+                            }
+                            <tr class="table-secondary fw-bold">
+                                <td colspan="2" class="text-end">Tổng cộng:</td>
+                                <td class="text-danger">@String.Format("{0:N0}", totalValue)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 💵 DOANH THU -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="fa-solid fa-sack-dollar"></i>
+        @if (productRevenueDays != null && productRevenueDays.Any())
+        {
+            @:Doanh thu theo ngày - @ViewBag.SearchName
+        }
+        else
+        {
+            @:Doanh thu theo tháng
+        }
+    </div>
+    <div class="card-body">
+        <canvas id="revenueChart" height="90"></canvas>
+    </div>
+</div>
+
+<!-- 🧾 3 BẢNG DỮ LIỆU GẦN ĐÂY -->
+<div class="row g-4">
+    <!-- Đơn hàng KH -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white fw-bold">
+                <i class="fa fa-shopping-cart"></i> Đơn hàng khách hàng mới nhất
+            </div>
+            <div class="card-body">
+                @if (recentOrders?.Any() == true)
+                {
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr><th>Mã</th><th>Sản phẩm</th><th>SL</th><th>ĐV</th><th>Ngày</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in recentOrders)
+                            {
+                                <tr>
+                                    <td>@o.OrderNumber</td>
+                                    <td>@o.Product?.ProductName</td>
+                                    <td>@o.Quantity</td>
+                                    <td>@(string.IsNullOrWhiteSpace(o.Unit) ? o.Product?.ProductUnit : o.Unit)</td>
+                                    <td>@o.OrderDate.ToString("dd/MM")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Không có dữ liệu</p>
+                    ;
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Lệnh sản xuất (toggle nguyên liệu) -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning fw-bold">
+                <i class="fa fa-industry"></i> Lệnh sản xuất gần đây
+            </div>
+            <div class="card-body">
+                @if (recentProductions?.Any() == true)
+                {
+                    <table class="table table-sm table-bordered text-center align-middle">
+                        <thead class="table-light">
+                            <tr><th>Mã</th><th>Sản phẩm</th><th>SL</th><th>ĐV</th><th>Ngày</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in recentProductions)
+                            {
+                                <tr class="toggle-row" data-id="@p.Id" style="cursor:pointer;">
+                                    <td><b>@p.OrderNumber</b></td>
+                                    <td>@p.Product?.ProductName</td>
+                                    <td>@p.Quantity</td>
+                                    <td>@p.Product?.ProductUnit</td>
+                                    <td>@p.StartDate.ToString("dd/MM")</td>
+                                </tr>
+                                <tr class="material-row" id="mat-@p.Id" style="display:none;">
+                                    <td colspan="5" class="bg-light text-start">
+                                        <b>🔧 Nguyên liệu:</b>
+                                        @if (p.Materials != null && p.Materials.Any())
+                                        {
+                                            <table class="table table-sm table-bordered mt-2 mb-0">
+                                                <thead>
+                                                    <tr class="bg-white text-center">
+                                                        <th>Tên nguyên liệu</th>
+                                                        <th>Số lượng</th>
+                                                        <th>Đơn vị</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var m in p.Materials)
+                                                    {
+                                                        <tr class="text-center">
+                                                            <td>@m.Product?.ProductName</td>
+                                                            <td>@m.PlannedQuantity</td>
+                                                            <td>@m.Unit</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-muted mb-0">Không có nguyên liệu</p>
+                                            ;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Không có dữ liệu</p>
+                    ;
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Đơn mua NVL -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white fw-bold">
+                <i class="fa fa-truck-fast"></i> Đơn mua NVL gần nhất
+            </div>
+            <div class="card-body">
+                @if (recentPurchases?.Any() == true)
+                {
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr><th>Mã</th><th>Nguyên liệu</th><th>SL</th><th>ĐV</th><th>Ngày</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in recentPurchases)
+                            {
+                                <tr>
+                                    <td>@p.PurchaseNumber</td>
+                                    <td>@p.Product?.ProductName</td>
+                                    <td>@p.Quantity</td>
+                                    <td>@(string.IsNullOrWhiteSpace(p.Unit) ? p.Product?.ProductUnit : p.Unit)</td>
+                                    <td>@p.OrderDate.ToString("dd/MM")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Không có dữ liệu</p>
+                    ;
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        const days = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Days));
+        const importData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ImportData));
+        const exportData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ExportData));
+
+        // 📦 NHẬP/XUẤT
+        new Chart(document.getElementById('importExportChart'), {
+            type: 'bar',
+            data: {
+                labels: days,
+                datasets: [
+                    {
+                        label: 'Nhập kho',
+                        data: importData,
+                        backgroundColor: 'rgba(75,192,192,0.7)',
+                        borderColor: 'rgba(75,192,192,1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Xuất kho',
+                        data: exportData,
+                        backgroundColor: 'rgba(255,99,132,0.7)',
+                        borderColor: 'rgba(255,99,132,1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            },
+            plugins: [ChartDataLabels]
+        });
+
+        // 💰 DOANH THU (tháng hoặc theo ngày sản phẩm)
+        const monthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Months));
+        const monthRevenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.RevenueData));
+        const productRevenueLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ProductRevenueDays ?? new List<string>()));
+        const productRevenueData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.ProductRevenueData ?? new decimal[0]));
+
+        const hasProductRevenue = productRevenueLabels.length > 0 && productRevenueData.length > 0;
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: hasProductRevenue ? productRevenueLabels : monthLabels,
+                datasets: [{
+                    label: hasProductRevenue ? 'Doanh thu sản phẩm (VNĐ)' : 'Doanh thu (VNĐ)',
+                    data: hasProductRevenue ? productRevenueData : monthRevenueData,
+                    borderColor: 'rgba(25,135,84,1)',
+                    backgroundColor: 'rgba(25,135,84,0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // 🧱 GIÁ TRỊ TỒN / TIÊU HAO NVL
+        const materialsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.MaterialInventory));
+        const materialUsageLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.MaterialUsageDays ?? new List<string>()));
+        const materialUsageData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.MaterialUsageData ?? new decimal[0]));
+
+        const isMaterialSearch = materialUsageLabels.length > 0 && materialUsageData.length > 0;
+
+        const materialLabels = isMaterialSearch
+            ? materialUsageLabels
+            : materialsData.map(m => m.ProductName);
+
+        const materialChartData = isMaterialSearch
+            ? materialUsageData
+            : materialsData.map(m => m.TotalValue);
+
+        const materialChartTitle = isMaterialSearch
+            ? 'Tiêu hao nguyên vật liệu theo ngày - ' + '@(ViewBag.SearchName ?? "")'
+            : 'Giá trị tồn kho từng nguyên vật liệu';
+
+        new Chart(document.getElementById('materialBarChart'), {
+            type: 'bar',
+            data: {
+                labels: materialLabels,
+                datasets: [{
+                    label: isMaterialSearch ? 'Tiêu hao (₫)' : 'Giá trị tồn kho (₫)',
+                    data: materialChartData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true },
+                    title: { display: true, text: materialChartTitle }
+                },
+                scales: {
+                    y: { beginAtZero: true },
+                    x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } }
+                }
+            }
+        });
+
+        // Toggle nguyên liệu trong bảng lệnh SX
+        $(document).on('click', '.toggle-row', function () {
+            $('#mat-' + $(this).data('id')).slideToggle(200);
+        });
+    </script>
+}

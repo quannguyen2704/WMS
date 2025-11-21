@@ -1,0 +1,153 @@
+﻿@model WMS.Models.ViewModel.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký tài khoản";
+}
+
+<div class="bg-light min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-11 col-sm-9 col-md-7 col-lg-5 col-xl-4">
+                <div class="card shadow-lg border-0 rounded-4">
+                    <div class="card-body p-4 p-md-4">
+                        <!-- Header -->
+                        <div class="text-center mb-3">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                                 style="width:60px;height:60px;background:rgba(13,110,253,0.08);">
+                                <i class="fa-solid fa-user-plus fa-2x text-primary"></i>
+                            </div>
+                            <h3 class="fw-bold text-primary mb-1">Đăng ký</h3>
+                            <p class="text-muted small mb-0">
+                                Tạo tài khoản để bắt đầu sử dụng hệ thống WMS
+                            </p>
+                        </div>
+
+                        <form method="post" asp-controller="Account" asp-action="Register" novalidate>
+                            @Html.AntiForgeryToken()
+
+                            <!-- 🔔 Chỉ hiển thị khi có lỗi -->
+                            @if (!ViewData.ModelState.IsValid &&
+                                                        ViewData.ModelState.Values.Any(v => v.Errors.Count > 0))
+                            {
+                                <div class="alert alert-danger small py-2 mb-3" role="alert">
+                                    <ul class="mb-0 ps-3">
+                                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                        {
+                                            <li>@error.ErrorMessage</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+
+                            <!-- Họ và tên -->
+                            <div class="mb-3">
+                                <label asp-for="FullName" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                    Họ và tên
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="fa-solid fa-id-card text-secondary"></i>
+                                    </span>
+                                    <input asp-for="FullName"
+                                           class="form-control border-start-0"
+                                           placeholder="Nhập họ và tên" />
+                                </div>
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Số điện thoại -->
+                            <div class="mb-3">
+                                <label asp-for="Phone" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                    Số điện thoại
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="fa-solid fa-phone text-secondary"></i>
+                                    </span>
+                                    <input asp-for="Phone"
+                                           class="form-control border-start-0"
+                                           placeholder="VD: 09xxxxxxxx / 03xxxxxxxx" />
+                                </div>
+                                <span asp-validation-for="Phone" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="mb-3">
+                                <label asp-for="Email" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                    Email
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="fa-solid fa-envelope text-secondary"></i>
+                                    </span>
+                                    <input asp-for="Email"
+                                           type="email"
+                                           class="form-control border-start-0"
+                                           placeholder="Nhập email của bạn" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Password -->
+                            <div class="mb-3">
+                                <label asp-for="Password" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                    Mật khẩu
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="fa-solid fa-lock text-secondary"></i>
+                                    </span>
+                                    <input asp-for="Password"
+                                           type="password"
+                                           class="form-control border-start-0"
+                                           placeholder="Nhập mật khẩu" />
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Confirm Password -->
+                            <div class="mb-3">
+                                <label asp-for="ConfirmPassword" class="form-label fw-semibold small text-uppercase text-muted mb-1">
+                                    Xác nhận mật khẩu
+                                </label>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="fa-solid fa-lock text-secondary"></i>
+                                    </span>
+                                    <input asp-for="ConfirmPassword"
+                                           type="password"
+                                           class="form-control border-start-0"
+                                           placeholder="Nhập lại mật khẩu" />
+                                </div>
+                                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            </div>
+
+                            <!-- Button -->
+                            <div class="d-grid mb-2">
+                                <button type="submit" class="btn btn-primary py-2 fw-semibold">
+                                    <i class="fa-solid fa-user-plus me-1"></i> Đăng ký
+                                </button>
+                            </div>
+
+                            <!-- Links -->
+                            <div class="text-center mt-2">
+                                <p class="small mb-0 text-muted">
+                                    Đã có tài khoản?
+                                    <a asp-controller="Account" asp-action="Login"
+                                       class="fw-semibold text-primary text-decoration-none">
+                                        Đăng nhập ngay
+                                    </a>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mb-3 d-md-none"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

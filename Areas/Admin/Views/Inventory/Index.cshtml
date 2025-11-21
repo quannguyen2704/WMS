@@ -1,0 +1,194 @@
+﻿@model IEnumerable<WMS.Models.InventoryViewModel>
+
+<div class="container mt-4">
+    <!-- 🌟 Tiêu đề + Nút xuất Excel -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fa-solid fa-warehouse me-2"></i> Danh sách tồn kho
+        </h2>
+
+        <a asp-action="ExportToExcel" class="btn btn-success shadow-sm">
+            <i class="fa-solid fa-file-excel me-1"></i> Xuất Excel
+        </a>
+    </div>
+
+    <!-- 📦 Bảng dữ liệu -->
+    <div class="card border-0 shadow-lg rounded-4">
+        <div class="card-body">
+            <table id="inventoryTable" class="table table-hover table-bordered align-middle text-center mb-0">
+                <thead class="table-gradient text-white">
+                    <tr>
+                        <th>Stt</th>
+                        <th><i class="fa-solid fa-box"></i> Sản phẩm</th>
+                        <th><i class="fa-solid fa-layer-group"></i> Loại</th>
+                        <th><i class="fa-solid fa-scale-balanced"></i> Đơn vị</th>
+                        <th><i class="fa-solid fa-money-bill-wave"></i> Đơn giá (VNĐ/ĐV)</th>
+                        <th><i class="fa-solid fa-database"></i> Ban đầu</th>
+                        <th><i class="fa-solid fa-arrow-down"></i> Nhập</th>
+                        <th><i class="fa-solid fa-arrow-up"></i> Xuất</th>
+                        <th><i class="fa-solid fa-cubes"></i> Tồn kho</th>
+                        <th><i class="fa-solid fa-coins"></i> Tổng tiền nhập</th>
+                        <th><i class="fa-solid fa-hand-holding-dollar"></i> Tổng tiền xuất</th>
+                        <th><i class="fa-solid fa-vault"></i> Giá trị tồn kho</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int index = 1;
+                    }
+                    @foreach (var item in Model)
+                    {
+                        string stockClass = item.Stock <= 5 ? "low-stock" :
+                        item.Stock <= 20 ? "medium-stock" : "high-stock";
+
+                        <tr class="fade-in">
+                            <td>@index</td>
+                            <td class="fw-semibold text-start ps-3">@item.ProductName</td>
+                            <td>@item.ProductTypeName</td>
+                            <td>@item.Unit</td>
+                            <td class="text-success fw-semibold">@String.Format("{0:N0}", item.ProductPrice)</td>
+                            <td>@item.InitialQuantity</td>
+                            <td class="text-success fw-semibold">+@item.TotalImported</td>
+                            <td class="text-danger fw-semibold">-@item.TotalExported</td>
+                            <td class="@stockClass fw-bold">@item.Stock</td>
+                            <td class="text-success fw-semibold">@String.Format("{0:N0}", item.TotalImportValue)</td>
+                            <td class="text-danger fw-semibold">@String.Format("{0:N0}", item.TotalExportValue)</td>
+                            <td class="fw-bold text-primary">@String.Format("{0:N0}", item.TotalStockValue)</td>
+                        </tr>
+                        index++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 📈 KPI Tổng hợp -->
+    <div class="row text-center mt-4 fade-in">
+        <!-- 1. Tổng sản phẩm -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-blue">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng sản phẩm</h6>
+                <h4 class="fw-bold text-primary">@Model.Count()</h4>
+            </div>
+        </div>
+
+        <!-- 2. Tổng tiền xuất -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-green">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng tiền xuất</h6>
+                <h4 class="fw-bold text-danger">
+                    @String.Format("{0:N0}", Model.Sum(x => x.TotalExportValue)) VNĐ
+                </h4>
+            </div>
+        </div>
+
+        <!-- 3. Tổng giá trị tồn kho -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-yellow">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng giá trị tồn kho</h6>
+                <h4 class="fw-bold text-info">
+                    @String.Format("{0:N0}", Model.Sum(x => x.TotalStockValue)) VNĐ
+                </h4>
+            </div>
+        </div>
+
+        <!-- 4. Tổng tiền nhập -->
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-pink">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng tiền nhập</h6>
+                <h4 class="fw-bold text-success">
+                    @String.Format("{0:N0}", Model.Sum(x => x.TotalImportValue)) VNĐ
+                </h4>
+            </div>
+        </div>
+    </div>
+
+
+@section Styles {
+    <style>
+        /* 🌈 Header gradient */
+        .table-gradient {
+            background: linear-gradient(90deg, #007bff 0%, #00a2ff 100%);
+            color: white;
+        }
+
+        .low-stock {
+            color: #dc3545;
+        }
+
+        .medium-stock {
+            color: #ffc107;
+        }
+
+        .high-stock {
+            color: #198754;
+        }
+
+        .fade-in {
+            animation: fadeInRow 0.8s ease-in-out;
+        }
+
+        @@keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bg-light-blue {
+            background: #e9f3ff;
+        }
+
+        .bg-light-green {
+            background: #e8f9ee;
+        }
+
+        .bg-light-yellow {
+            background: #fff9e6;
+        }
+
+        .bg-light-pink {
+            background: #ffe9ef;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+    <script>
+        $(document).ready(function () {
+            const table = $('#inventoryTable').DataTable({
+                language: {
+                    search: "🔍 Tìm kiếm:",
+                    lengthMenu: "Hiển thị _MENU_ dòng",
+                    info: "Hiển thị _START_ đến _END_ của _TOTAL_ dòng",
+                    paginate: { previous: "← Trước", next: "Sau →" }
+                },
+                pageLength: 10,
+                dom:
+                    "<'row mb-3'<'col-sm-6'l><'col-sm-6 text-end'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row mt-3'<'col-sm-5'i><'col-sm-7'p>>"
+            });
+
+            // 🧩 Bộ lọc loại sản phẩm
+            $('#filterType').on('change', function () {
+                const selectedType = $(this).val();
+                if (selectedType) {
+                    table.column(2).search('^' + selectedType + '$', true, false).draw();
+                } else {
+                    table.column(2).search('').draw();
+                }
+            });
+        });
+    </script>
+}

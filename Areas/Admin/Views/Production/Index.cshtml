@@ -1,0 +1,281 @@
+﻿@model X.PagedList.IPagedList<WMS.Models.ProductionOrderModel>
+@using X.PagedList.Mvc.Core
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Danh sách lệnh sản xuất";
+}
+
+<div class="container mt-4">
+    <!-- 🌟 Tiêu đề + nút tạo mới -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary mb-0">
+            <i class="fa-solid fa-industry me-2"></i> Danh sách lệnh sản xuất
+        </h2>
+        <div class="d-flex gap-2">
+            <!-- NÚT XUẤT EXCEL ĐÃ THÊM -->
+            <a asp-action="ExportToExcel"
+               asp-route-keyword="@ViewBag.Keyword"
+               asp-route-statusFilter="@ViewBag.StatusFilter"
+               asp-route-fromDate="@ViewBag.FromDate"
+               asp-route-toDate="@ViewBag.ToDate"
+               class="btn btn-success shadow-sm">
+                <i class="fa-solid fa-file-excel me-1"></i> Xuất Excel
+            </a>
+            <a asp-action="Create" class="btn btn-primary shadow-sm">
+                <i class="fa fa-plus me-1"></i> Tạo mới
+            </a>
+        </div>
+    </div>
+
+    <!-- 🔍 Bộ lọc -->
+    <form method="get" class="row g-3 align-items-end mb-4 shadow-sm p-3 rounded bg-light">
+        <div class="col-md-4">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</label>
+            <input type="text" name="keyword" value="@ViewBag.Keyword" class="form-control" placeholder="Nhập mã lệnh hoặc tên sản phẩm..." />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-filter"></i> Trạng thái</label>
+            <select name="statusFilter" class="form-select">
+                <option value="">-- Tất cả --</option>
+                <option value="0" selected="@(ViewBag.StatusFilter != null && (int)ViewBag.StatusFilter == 0)">Khởi tạo</option>
+                <option value="1" selected="@(ViewBag.StatusFilter != null && (int)ViewBag.StatusFilter == 1)">Đang sản xuất</option>
+                <option value="2" selected="@(ViewBag.StatusFilter != null && (int)ViewBag.StatusFilter == 2)">Hoàn thành</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-day"></i> Từ ngày</label>
+            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-bold text-primary"><i class="fa-solid fa-calendar-check"></i> Đến ngày</label>
+            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" />
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary w-50"><i class="fa-solid fa-filter"></i> Lọc</button>
+            <a asp-action="Index" class="btn btn-outline-secondary w-50"><i class="fa-solid fa-rotate-left"></i> Reset</a>
+        </div>
+    </form>
+
+    <!-- 📢 Thông báo -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success shadow-sm fade-in">
+            <i class="fa fa-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger shadow-sm fade-in">
+            <i class="fa fa-exclamation-triangle"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- 📋 Bảng danh sách -->
+    <div class="card border-0 shadow-lg rounded-4">
+        <div class="card-body">
+            <table id="productionTable" class="table table-hover table-bordered align-middle text-center mb-0">
+                <thead class="table-gradient text-white">
+                    <tr>
+                        <th>#</th>
+                        <th><i class="fa-solid fa-barcode"></i> Mã lệnh</th>
+                        <th><i class="fa-solid fa-box"></i> Thành phẩm</th>
+                        <th><i class="fa-solid fa-cubes"></i> SL</th>
+                        <th><i class="fa-solid fa-ruler"></i> Đơn vị</th>
+                        <th><i class="fa-solid fa-money-bill-wave"></i> Đơn giá (VNĐ)</th>
+                        <th><i class="fa-solid fa-coins"></i> Thành tiền</th>
+                        <th><i class="fa-solid fa-flask"></i> Nguyên liệu</th>
+                        <th><i class="fa-solid fa-calendar"></i> Ngày bắt đầu</th>
+                        <th><i class="fa-solid fa-clock"></i> Ngày hoàn thành</th>
+                        <th><i class="fa-solid fa-signal"></i> Trạng thái</th>
+                        <th><i class="fa-solid fa-wrench"></i> Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="12" class="text-center text-muted py-3">
+                                <i class="fa fa-circle-info"></i> Không có lệnh sản xuất nào khớp với bộ lọc.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        int stt = Model.FirstItemOnPage;
+                        foreach (var o in Model)
+                        {
+                            decimal productValue = o.Quantity * o.UnitPrice;
+                            decimal totalMaterial = o.Materials.Sum(m => m.PlannedQuantity * m.UnitPrice);
+
+                            <tr class="fade-in">
+                                <td class="fw-bold">@stt</td>
+                                <td>@o.OrderNumber</td>
+                                <td class="text-start">@o.Product?.ProductName</td>
+                                <td class="text-end">@o.Quantity</td>
+                                <td>@o.Product?.ProductUnit</td>
+                                <td class="text-end text-success fw-semibold">@String.Format("{0:N0}", o.UnitPrice)</td>
+                                <td class="text-end text-primary fw-bold">@String.Format("{0:N0}", productValue)</td>
+
+                                <td>
+                                    @if (o.Materials?.Any() == true)
+                                    {
+                                        <div class="table-responsive shadow-sm rounded-3">
+                                            <table class="table table-sm table-striped align-middle mb-0 text-center">
+                                                <thead class="bg-primary text-white small">
+                                                    <tr>
+                                                        <th>Tên NL</th>
+                                                        <th>SL</th>
+                                                        <th>Đơn vị</th>
+                                                        <th>Đơn giá (VNĐ)</th>
+                                                        <th>Thành tiền (VNĐ)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var m in o.Materials)
+                                                    {
+                                                        <tr>
+                                                            <td class="text-start fw-semibold">@m.Product?.ProductName</td>
+                                                            <td>@m.PlannedQuantity</td>
+                                                            <td>@m.Unit</td>
+                                                            <td class="text-end text-success">@String.Format("{0:N0}", m.UnitPrice)</td>
+                                                            <td class="text-end text-danger fw-semibold">@String.Format("{0:N0}", m.PlannedQuantity * m.UnitPrice)</td>
+                                                        </tr>
+                                                    }
+                                                    <tr class="fw-bold table-light">
+                                                        <td colspan="4" class="text-end">Tổng tiền nguyên liệu:</td>
+                                                        <td class="text-end text-danger">@String.Format("{0:N0}", totalMaterial)</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fst-italic">Không có</span>
+                                    }
+                                </td>
+
+                                <td>@o.StartDate.ToString("dd/MM/yyyy")</td>
+                                <td>@(o.EndDate?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                                <td>
+                                    @switch (o.Status)
+                                    {
+                                        case WMS.Models.ProductionStatus.CREATED:
+                                            <span class="badge bg-secondary px-3 py-2">Khởi tạo</span>
+                                            ; break;
+                                        case WMS.Models.ProductionStatus.IN_PROGRESS:
+                                            <span class="badge bg-warning text-dark px-3 py-2">Đang SX</span>
+                                            ; break;
+                                        case WMS.Models.ProductionStatus.DONE:
+                                            <span class="badge bg-success px-3 py-2">Hoàn thành</span>
+                                            ; break;
+                                    }
+                                </td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-warning me-1" title="Chỉnh sửa">
+                                        <i class="fa fa-pen"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@o.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa lệnh sản xuất này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Xóa">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 📈 KPI Tổng hợp -->
+    <div class="row text-center mt-4 fade-in">
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-blue">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng chi phí nguyên liệu</h6>
+                <h4 class="fw-bold text-danger">@String.Format("{0:N0}", ViewBag.TotalMaterialCost) VNĐ</h4>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-light-green">
+                <h6 class="fw-semibold text-secondary mb-1">Tổng giá trị thành phẩm</h6>
+                <h4 class="fw-bold text-success">@String.Format("{0:N0}", ViewBag.TotalProductValue) VNĐ</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📄 Phân trang -->
+    @if (Model.PageCount > 1)
+    {
+        <div class="d-flex justify-content-center mt-4">
+            @Html.PagedListPager(Model, page => Url.Action("Index", new {
+            page,
+                keyword = ViewBag.Keyword,
+                statusFilter = ViewBag.StatusFilter,
+                fromDate = ViewBag.FromDate,
+                toDate = ViewBag.ToDate
+                }),
+                new PagedListRenderOptions
+                {
+                    UlElementClasses = new[] { "pagination" },
+                    LiElementClasses = new[] { "page-item" },
+                    PageClasses = new[] { "page-link" },
+                    Display = PagedListDisplayMode.IfNeeded
+                })
+    </div>
+        }
+</div>
+
+@section Styles {
+    <style>
+        .table-gradient {
+            background: linear-gradient(90deg, #007bff 0%, #00a2ff 100%);
+            color: white;
+        }
+
+        .fade-in {
+            animation: fadeInRow 0.8s ease-in-out;
+        }
+
+        @@keyframes fadeInRow {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bg-light-blue {
+            background: #e9f3ff;
+        }
+
+        .bg-light-green {
+            background: #e8f9ee;
+        }
+
+        .bg-light-yellow {
+            background: #fff9e6;
+        }
+
+        .table-sm th, .table-sm td {
+            padding: 4px 6px;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #f8f9fa;
+        }
+
+        .table-striped tbody tr:hover {
+            background-color: #eaf4ff;
+        }
+    </style>
+}
