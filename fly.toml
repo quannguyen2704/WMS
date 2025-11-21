@@ -1,15 +1,15 @@
-app = "wms-quan" # đặt tên app duy nhất trên fly.io
-primary_region = "sin" # Singapore - gần Việt Nam nhất
+app = "wms-quan"
+primary_region = "sin"
 
 [build]
-dockerfile = "Dockerfile"
+  dockerfile = "Dockerfile"
 
 [env]
-ASPNETCORE_URLS = "http://+:8080"
+  ASPNETCORE_URLS = "http://+:8080"
 
 [http_service]
-internal_port = 8080
-force_https = true
-auto_start_machines = true
-auto_stop_machines = true
-min_machines_running = 1
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = true
+  min_machines_running = 1
